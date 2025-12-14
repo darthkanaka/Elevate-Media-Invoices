@@ -40,6 +40,35 @@
         <p class="form-hint">Separate multiple emails with commas</p>
       </div>
 
+      <!-- Pay Period Selection -->
+      <div class="form-group">
+        <label for="periods-forward" class="form-label">Periods Forward</label>
+        <input
+          type="number"
+          id="periods-forward"
+          class="form-input"
+          value="1"
+          min="0"
+          max="26"
+          style="max-width: 100px;"
+        >
+        <p class="form-hint">Number of 2-week periods from Dec 12, 2024</p>
+      </div>
+
+      <!-- Pay Period Dates (Read-only) -->
+      <div class="form-group">
+        <label class="form-label">Pay Period</label>
+        <div id="pay-period-display" class="pay-period-display">
+          <div class="pay-period-dates">
+            <span id="period-start">-</span> to <span id="period-end">-</span>
+          </div>
+          <div class="pay-period-weeks">
+            <div>Week 1: <span id="week1-dates">-</span></div>
+            <div>Week 2: <span id="week2-dates">-</span></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Hours -->
       <div class="form-grid form-grid-2">
         <div class="form-group">

@@ -640,6 +640,38 @@ body {
   line-height: 1.7;
 }
 
+/* Pay Period Display */
+.pay-period-display {
+  background: var(--surface-alt);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+.pay-period-dates {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.pay-period-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.pay-period-weeks div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pay-period-weeks span {
+  color: var(--text-primary);
+}
+
 /* Responsive Adjustments */
 @media (min-width: 640px) {
   .container {
