@@ -1,26 +1,39 @@
 /* Elevate Media Invoice Portal - Styles */
 
 :root {
-  --primary-color: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #dbeafe;
+  /* Brand Colors - Elevate Media Orange */
+  --primary-color: #E86C00;
+  --primary-hover: #D45F00;
+  --primary-light: #FFF3E8;
   --secondary-color: #64748b;
   --success-color: #10b981;
   --success-light: #d1fae5;
   --error-color: #ef4444;
   --error-light: #fee2e2;
   --warning-color: #f59e0b;
-  --background: #f8fafc;
+
+  /* Neutrals */
+  --background: #ffffff;
   --surface: #ffffff;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --border-color: #e2e8f0;
+  --surface-alt: #f8f9fa;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b7280;
+  --text-light: #9ca3af;
+  --border-color: #e5e7eb;
+
+  /* Header/Footer */
+  --header-bg: #2d2d2d;
+  --header-text: #ffffff;
+
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 }
 
 * {
@@ -30,72 +43,84 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   background-color: var(--background);
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
 }
 
-/* Header */
+/* Header - Dark like Elevate Media site */
 .header {
-  background: var(--primary-color);
-  color: white;
-  padding: 1rem;
+  background: var(--header-bg);
+  color: var(--header-text);
+  padding: 1rem 1.5rem;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: var(--shadow-md);
 }
 
 .header-content {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+/* Logo - Matching Elevate Media branding */
 .logo {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   text-decoration: none;
-  color: white;
+  color: var(--header-text);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .logo span {
+  display: block;
+  font-size: 0.6rem;
   font-weight: 400;
-  opacity: 0.9;
+  letter-spacing: 0.3em;
+  opacity: 0.8;
+  margin-top: -4px;
 }
 
 .back-link {
-  color: white;
+  color: var(--header-text);
   text-decoration: none;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  opacity: 0.9;
+  opacity: 0.8;
   transition: opacity 0.2s;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
 .back-link:hover {
   opacity: 1;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 /* Main Container */
 .container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 1.5rem 1rem;
+  padding: 2rem 1.5rem;
 }
 
 /* Page Title */
 .page-title {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
   margin-bottom: 1.5rem;
   color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .page-subtitle {
@@ -111,8 +136,8 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
-  padding: 1.5rem;
-  margin-bottom: 1rem;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .card-title {
@@ -124,30 +149,33 @@ body {
 
 /* Dashboard Sections */
 .section {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .section-title {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   color: var(--text-secondary);
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary-color);
+  display: inline-block;
 }
 
 /* Client List */
 .client-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .client-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
+  padding: 1.25rem 1.5rem;
   background: var(--surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -173,33 +201,36 @@ body {
 
 .client-name {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
 .client-meta {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
 .client-arrow {
-  color: var(--text-secondary);
-  font-size: 1.25rem;
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 300;
 }
 
-/* Buttons */
+/* Buttons - Orange like Elevate Media */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
+  padding: 0.875rem 2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   width: 100%;
 }
 
@@ -210,22 +241,36 @@ body {
 
 .btn-primary:hover {
   background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:disabled {
   background: var(--secondary-color);
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {
-  background: var(--surface);
+  background: transparent;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background: var(--background);
   border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.btn-outline:hover {
+  background: var(--primary-color);
+  color: white;
 }
 
 .btn-danger {
@@ -241,7 +286,7 @@ body {
 
 .btn-sm {
   padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .btn-icon {
@@ -252,26 +297,28 @@ body {
 
 /* Forms */
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-label {
   display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .form-label .required {
-  color: var(--error-color);
+  color: var(--primary-color);
 }
 
 .form-input,
 .form-select,
 .form-textarea {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.875rem 1rem;
   font-size: 1rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -289,14 +336,14 @@ body {
 }
 
 .form-textarea {
-  min-height: 100px;
+  min-height: 120px;
   resize: vertical;
 }
 
 .form-hint {
   font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 0.25rem;
+  color: var(--text-light);
+  margin-top: 0.375rem;
 }
 
 /* Form Grid */
@@ -340,9 +387,9 @@ body {
 
 /* Alert Messages */
 .alert {
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   border-radius: var(--radius-md);
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
@@ -351,19 +398,19 @@ body {
 .alert-success {
   background: var(--success-light);
   color: #065f46;
-  border: 1px solid var(--success-color);
+  border-left: 4px solid var(--success-color);
 }
 
 .alert-error {
   background: var(--error-light);
   color: #991b1b;
-  border: 1px solid var(--error-color);
+  border-left: 4px solid var(--error-color);
 }
 
 .alert-info {
   background: var(--primary-light);
-  color: #1e40af;
-  border: 1px solid var(--primary-color);
+  color: #9a3c00;
+  border-left: 4px solid var(--primary-color);
 }
 
 .alert-icon {
@@ -399,7 +446,7 @@ body {
 .loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -409,21 +456,28 @@ body {
 }
 
 .loading-overlay .spinner {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-width: 3px;
   color: var(--primary-color);
+}
+
+.loading-message {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* Placeholder/Coming Soon */
 .placeholder {
   text-align: center;
-  padding: 3rem 1.5rem;
+  padding: 4rem 2rem;
 }
 
 .placeholder-icon {
   font-size: 4rem;
   margin-bottom: 1rem;
+  opacity: 0.5;
 }
 
 .placeholder-title {
@@ -442,7 +496,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -474,7 +528,7 @@ body {
 }
 
 .modal-header {
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -527,7 +581,7 @@ body {
 /* Empty State */
 .empty-state {
   text-align: center;
-  padding: 2rem;
+  padding: 3rem;
   color: var(--text-secondary);
 }
 
@@ -535,7 +589,9 @@ body {
 .action-bar {
   display: flex;
   gap: 0.75rem;
-  margin-top: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
 }
 
 .action-bar .btn {
@@ -546,7 +602,7 @@ body {
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .quick-action {
@@ -554,8 +610,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 1.25rem;
+  gap: 0.75rem;
+  padding: 1.5rem;
   background: var(--surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -570,22 +626,28 @@ body {
 }
 
 .quick-action-icon {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
+  color: var(--primary-color);
 }
 
 .quick-action-label {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 500;
+}
+
+/* Footer Note */
+.card p {
+  line-height: 1.7;
 }
 
 /* Responsive Adjustments */
 @media (min-width: 640px) {
   .container {
-    padding: 2rem;
+    padding: 2.5rem 2rem;
   }
 
-  .header-content {
-    padding: 0 1rem;
+  .header {
+    padding: 1.25rem 2rem;
   }
 
   .btn {
