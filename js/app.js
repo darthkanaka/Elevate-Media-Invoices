@@ -388,22 +388,19 @@ const TouchAHeartInvoice = {
     const currentMonth = now.getMonth(); // 0-indexed
     const currentYear = now.getFullYear();
 
-    // Invoice month/year (current month)
-    const invoiceMonthSelect = DOM.$('invoice-month');
-    const invoiceYearInput = DOM.$('invoice-year');
-    if (invoiceMonthSelect) invoiceMonthSelect.value = this.months[currentMonth];
-    if (invoiceYearInput) invoiceYearInput.value = currentYear;
+    // Invoice date (today)
+    const invoiceDateInput = DOM.$('invoice-date');
+    if (invoiceDateInput) {
+      invoiceDateInput.value = now.toISOString().split('T')[0];
+    }
 
-    // Billing period (previous month)
-    const billingMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const billingYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-    const billingMonthSelect = DOM.$('billing-month');
-    const billingYearInput = DOM.$('billing-year');
-    if (billingMonthSelect) billingMonthSelect.value = this.months[billingMonth];
-    if (billingYearInput) billingYearInput.value = billingYear;
-
-    // Submit date (5 days before end of invoice month)
-    this.updateSubmitDate();
+    // Retainer for (next month)
+    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+    const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+    const retainerMonthSelect = DOM.$('retainer-month');
+    const retainerYearInput = DOM.$('retainer-year');
+    if (retainerMonthSelect) retainerMonthSelect.value = this.months[nextMonth];
+    if (retainerYearInput) retainerYearInput.value = nextMonthYear;
 
     // Description
     this.updateDescription();
@@ -422,72 +419,27 @@ const TouchAHeartInvoice = {
       form.addEventListener('submit', (e) => this.handleSubmit(e));
     }
 
-    // Update submit date and description when month/year changes
-    const invoiceMonth = DOM.$('invoice-month');
-    const invoiceYear = DOM.$('invoice-year');
+    // Update description when retainer month/year changes
+    const retainerMonth = DOM.$('retainer-month');
+    const retainerYear = DOM.$('retainer-year');
 
-    if (invoiceMonth) {
-      invoiceMonth.addEventListener('change', () => {
-        this.updateSubmitDate();
-        this.updateDescription();
-        this.updateBillingPeriod();
-      });
+    if (retainerMonth) {
+      retainerMonth.addEventListener('change', () => this.updateDescription());
     }
-    if (invoiceYear) {
-      invoiceYear.addEventListener('change', () => {
-        this.updateSubmitDate();
-        this.updateDescription();
-        this.updateBillingPeriod();
-      });
+    if (retainerYear) {
+      retainerYear.addEventListener('change', () => this.updateDescription());
     }
-  },
-
-  updateBillingPeriod() {
-    const invoiceMonthSelect = DOM.$('invoice-month');
-    const invoiceYearInput = DOM.$('invoice-year');
-    const billingMonthSelect = DOM.$('billing-month');
-    const billingYearInput = DOM.$('billing-year');
-
-    if (!invoiceMonthSelect || !billingMonthSelect) return;
-
-    const invoiceMonthIndex = this.months.indexOf(invoiceMonthSelect.value);
-    const invoiceYear = parseInt(invoiceYearInput?.value) || new Date().getFullYear();
-
-    // Billing period is previous month
-    const billingMonthIndex = invoiceMonthIndex === 0 ? 11 : invoiceMonthIndex - 1;
-    const billingYear = invoiceMonthIndex === 0 ? invoiceYear - 1 : invoiceYear;
-
-    billingMonthSelect.value = this.months[billingMonthIndex];
-    if (billingYearInput) billingYearInput.value = billingYear;
-  },
-
-  updateSubmitDate() {
-    const invoiceMonthSelect = DOM.$('invoice-month');
-    const invoiceYearInput = DOM.$('invoice-year');
-    const submitDateInput = DOM.$('submit-date');
-
-    if (!invoiceMonthSelect || !submitDateInput) return;
-
-    const monthIndex = this.months.indexOf(invoiceMonthSelect.value);
-    const year = parseInt(invoiceYearInput?.value) || new Date().getFullYear();
-
-    // Submit date is the 25th of the invoice month
-    const submitDate = new Date(year, monthIndex, 25);
-
-    // Format as YYYY-MM-DD
-    const formatted = submitDate.toISOString().split('T')[0];
-    submitDateInput.value = formatted;
   },
 
   updateDescription() {
-    const invoiceMonthSelect = DOM.$('invoice-month');
-    const invoiceYearInput = DOM.$('invoice-year');
+    const retainerMonthSelect = DOM.$('retainer-month');
+    const retainerYearInput = DOM.$('retainer-year');
     const descriptionTextarea = DOM.$('description');
 
-    if (!invoiceMonthSelect || !descriptionTextarea) return;
+    if (!retainerMonthSelect || !descriptionTextarea) return;
 
-    const month = invoiceMonthSelect.value;
-    const year = invoiceYearInput?.value || new Date().getFullYear();
+    const month = retainerMonthSelect.value;
+    const year = retainerYearInput?.value || new Date().getFullYear();
 
     descriptionTextarea.value = `Monthly Retainer for the month of ${month}, ${year}
 
@@ -502,11 +454,9 @@ Projected Scope of Work:
     DOM.clearAlerts();
 
     const sendTo = DOM.$('send-to')?.value?.trim();
-    const invoiceMonth = DOM.$('invoice-month')?.value;
-    const invoiceYear = parseInt(DOM.$('invoice-year')?.value);
-    const billingMonth = DOM.$('billing-month')?.value;
-    const billingYear = parseInt(DOM.$('billing-year')?.value);
-    const submitDate = DOM.$('submit-date')?.value;
+    const retainerMonth = DOM.$('retainer-month')?.value;
+    const retainerYear = parseInt(DOM.$('retainer-year')?.value);
+    const invoiceDate = DOM.$('invoice-date')?.value;
     const description = DOM.$('description')?.value?.trim();
 
     // Validation
@@ -515,12 +465,18 @@ Projected Scope of Work:
       return;
     }
 
+    // Calculate billing period (month before retainer month)
+    const retainerMonthIndex = this.months.indexOf(retainerMonth);
+    const billingMonthIndex = retainerMonthIndex === 0 ? 11 : retainerMonthIndex - 1;
+    const billingMonth = this.months[billingMonthIndex];
+    const billingYear = retainerMonthIndex === 0 ? retainerYear - 1 : retainerYear;
+
     const payload = {
-      invoiceMonth,
-      invoiceYear,
+      invoiceMonth: retainerMonth,
+      invoiceYear: retainerYear,
       billingMonth,
       billingYear,
-      submitDate,
+      submitDate: invoiceDate,
       description,
       sendTo
     };
