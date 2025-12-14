@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Create Recurring Invoice - Elevate Media">
+  <title>Create Invoice - Elevate Media</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <a href="../index.html" class="logo">Elevate <span>Media</span></a>
+      <a href="../index.html" class="back-link">&larr; Back</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <h1 id="page-title" class="page-title">Create Invoice</h1>
+
+    <!-- Alert Container -->
+    <div id="alert-container"></div>
+
+    <!-- Invoice Form -->
+    <form id="invoice-form" class="card">
+      <!-- Send To -->
+      <div class="form-group">
+        <label for="send-to" class="form-label">
+          Send To <span class="required">*</span>
+        </label>
+        <input
+          type="text"
+          id="send-to"
+          class="form-input"
+          placeholder="email@example.com"
+          required
+        >
+        <p class="form-hint">Separate multiple emails with commas</p>
+      </div>
+
+      <!-- Hours -->
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label for="week1-hours" class="form-label">Week 1 Hours</label>
+          <input
+            type="number"
+            id="week1-hours"
+            class="form-input"
+            value="40"
+            min="0"
+            max="168"
+            step="0.5"
+          >
+        </div>
+        <div class="form-group">
+          <label for="week2-hours" class="form-label">Week 2 Hours</label>
+          <input
+            type="number"
+            id="week2-hours"
+            class="form-input"
+            value="40"
+            min="0"
+            max="168"
+            step="0.5"
+          >
+        </div>
+      </div>
+
+      <!-- Project Description -->
+      <div class="form-group">
+        <label for="project-description" class="form-label">Project Description</label>
+        <textarea
+          id="project-description"
+          class="form-textarea"
+          placeholder="Describe the work completed during this period..."
+          rows="4"
+        ></textarea>
+      </div>
+
+      <!-- Expenses -->
+      <div class="form-group">
+        <label class="form-label">Expenses</label>
+        <div id="expenses-container" class="expense-list">
+          <div class="expense-item">
+            <input
+              type="text"
+              class="form-input expense-description"
+              placeholder="Description"
+            >
+            <input
+              type="number"
+              class="form-input expense-amount"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+            >
+            <button type="button" class="btn btn-secondary btn-icon" disabled style="opacity: 0.3;">
+              &times;
+            </button>
+          </div>
+        </div>
+        <button type="button" id="add-expense-btn" class="btn btn-secondary btn-sm mt-1">
+          + Add Expense
+        </button>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="action-bar">
+        <button type="submit" class="btn btn-primary">
+          Submit Invoice
+        </button>
+      </div>
+    </form>
+
+    <!-- Info Card -->
+    <div class="card mt-2">
+      <p style="font-size: 0.875rem; color: var(--text-secondary);">
+        <strong>Note:</strong> This invoice will be generated as a PDF and emailed to the recipient(s).
+        A copy will also be sent to kawika@elevatemediahi.com.
+      </p>
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>

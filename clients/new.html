@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Add New Client - Elevate Media">
+  <title>Add Client - Elevate Media</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <a href="../index.html" class="logo">Elevate <span>Media</span></a>
+      <a href="../index.html" class="back-link">&larr; Back</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <h1 class="page-title">Add New Client</h1>
+
+    <!-- Alert Container -->
+    <div id="alert-container"></div>
+
+    <!-- Client Form -->
+    <form id="client-form">
+      <!-- Basic Info -->
+      <div class="card">
+        <h2 class="card-title">Basic Information</h2>
+
+        <div class="form-group">
+          <label for="client-name" class="form-label">
+            Client Name <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="client-name"
+            class="form-input"
+            placeholder="Company or Client Name"
+            required
+          >
+        </div>
+
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label for="invoice-type" class="form-label">Invoice Type</label>
+            <select id="invoice-type" class="form-select">
+              <option value="recurring">Recurring</option>
+              <option value="one-off">One-Off</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="default-rate" class="form-label">Default Rate ($)</label>
+            <input
+              type="number"
+              id="default-rate"
+              class="form-input"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="payment-terms" class="form-label">Payment Terms</label>
+          <input
+            type="text"
+            id="payment-terms"
+            class="form-input"
+            placeholder="e.g., Net 30, Due on Receipt"
+          >
+        </div>
+      </div>
+
+      <!-- Billing Contact -->
+      <div class="card">
+        <h2 class="card-title">Billing Contact</h2>
+
+        <div class="form-group">
+          <label for="billing-contact-name" class="form-label">Contact Name</label>
+          <input
+            type="text"
+            id="billing-contact-name"
+            class="form-input"
+            placeholder="Full Name"
+          >
+        </div>
+
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label for="billing-email" class="form-label">Email</label>
+            <input
+              type="email"
+              id="billing-email"
+              class="form-input"
+              placeholder="billing@company.com"
+            >
+          </div>
+          <div class="form-group">
+            <label for="billing-phone" class="form-label">Phone</label>
+            <input
+              type="tel"
+              id="billing-phone"
+              class="form-input"
+              placeholder="(555) 555-5555"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing Address -->
+      <div class="card">
+        <h2 class="card-title">Billing Address</h2>
+
+        <div class="form-group">
+          <label for="billing-address-line1" class="form-label">Address Line 1</label>
+          <input
+            type="text"
+            id="billing-address-line1"
+            class="form-input"
+            placeholder="Street Address"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="billing-address-line2" class="form-label">Address Line 2</label>
+          <input
+            type="text"
+            id="billing-address-line2"
+            class="form-input"
+            placeholder="Suite, Unit, Building (optional)"
+          >
+        </div>
+
+        <div class="form-grid form-grid-3">
+          <div class="form-group">
+            <label for="billing-city" class="form-label">City</label>
+            <input
+              type="text"
+              id="billing-city"
+              class="form-input"
+              placeholder="City"
+            >
+          </div>
+          <div class="form-group">
+            <label for="billing-state" class="form-label">State</label>
+            <input
+              type="text"
+              id="billing-state"
+              class="form-input"
+              placeholder="State"
+            >
+          </div>
+          <div class="form-group">
+            <label for="billing-zip" class="form-label">ZIP Code</label>
+            <input
+              type="text"
+              id="billing-zip"
+              class="form-input"
+              placeholder="ZIP"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoice Recipient -->
+      <div class="card">
+        <h2 class="card-title">Invoice Recipient</h2>
+        <p class="form-hint mb-2">Who should receive the invoices? (can be different from billing contact)</p>
+
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label for="send-to-name" class="form-label">Recipient Name</label>
+            <input
+              type="text"
+              id="send-to-name"
+              class="form-input"
+              placeholder="Full Name"
+            >
+          </div>
+          <div class="form-group">
+            <label for="send-to-email" class="form-label">Recipient Email</label>
+            <input
+              type="email"
+              id="send-to-email"
+              class="form-input"
+              placeholder="email@company.com"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card">
+        <h2 class="card-title">Notes</h2>
+
+        <div class="form-group">
+          <label for="notes" class="form-label">Internal Notes</label>
+          <textarea
+            id="notes"
+            class="form-textarea"
+            placeholder="Any internal notes about this client..."
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="action-bar">
+        <a href="../index.html" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Client</button>
+      </div>
+    </form>
+  </main>
+
+  <!-- Scripts -->
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>
