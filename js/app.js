@@ -322,23 +322,25 @@ const RecurringInvoice = {
       expenses: this.getExpenses()
     };
 
+    console.log('Submitting Invisible Arts invoice:', payload);
+
     try {
       DOM.showLoading('Submitting invoice...');
 
-      // Determine endpoint based on client
-      // For now, we use the Invisible Arts endpoint for all recurring clients
       const endpoint = ENDPOINTS['invisible-arts'];
 
+      // Use form submission approach for better Google Apps Script compatibility
       const response = await fetch(endpoint, {
         method: 'POST',
-        mode: 'no-cors', // Google Apps Script requires this
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'text/plain'
         },
         body: JSON.stringify(payload)
       });
 
-      // With no-cors, we can't read the response, but if we got here it was sent
+      const result = await response.text();
+      console.log('Response:', result);
+
       DOM.showAlert('success', 'Invoice Submitted!',
         'The invoice has been generated and emailed. Check your inbox shortly.');
 
