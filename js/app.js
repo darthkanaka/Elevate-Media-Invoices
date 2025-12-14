@@ -5,7 +5,7 @@
 // Google Apps Script endpoints
 const ENDPOINTS = {
   'invisible-arts': 'https://script.google.com/macros/s/AKfycbyXunWS9R16yK7H0WS1cMUNxvMdoWK403vHnHvut0kCmw7f4LpE5GHt466Ou2xb6-x4/exec',
-  'touch-a-heart': 'https://script.google.com/macros/s/AKfycbw6704L7xpa3GPQkzIBuqsiKR2mN3t_rtcg-Newyf3fhXbjPVLQazAWfQzxRwB6K3k3/exec'
+  'touch-a-heart': 'https://script.google.com/macros/s/AKfycbxSsPa7iyNz1re27zsrXjOGOzieh1XaSBkozWH0igYfxIr-1Vg1QruqPnQqnNJpXPCw/exec'
 };
 
 // Client slug mapping (client name -> form page)
