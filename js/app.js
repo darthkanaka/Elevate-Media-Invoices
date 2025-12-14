@@ -483,25 +483,32 @@ Projected Scope of Work:
       sendTo
     };
 
+    console.log('Submitting Touch A Heart invoice:', payload);
+    console.log('Endpoint:', ENDPOINTS['touch-a-heart']);
+
     try {
       DOM.showLoading('Submitting invoice...');
 
       const endpoint = ENDPOINTS['touch-a-heart'];
 
-      await fetch(endpoint, {
+      const response = await fetch(endpoint, {
         method: 'POST',
-        mode: 'no-cors',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'text/plain'
         },
         body: JSON.stringify(payload)
       });
+
+      const result = await response.text();
+      console.log('Response status:', response.status);
+      console.log('Response:', result);
 
       DOM.showAlert('success', 'Invoice Submitted!',
         'The invoice has been generated and emailed. Check your inbox shortly.');
 
     } catch (error) {
       console.error('Failed to submit invoice:', error);
+      console.error('Error details:', error.message, error.stack);
       DOM.showAlert('error', 'Submission Failed',
         'There was an error submitting the invoice. Please try again.');
     } finally {
