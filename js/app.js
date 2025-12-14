@@ -300,9 +300,41 @@ const RecurringInvoice = {
   expenseCount: 1,
   // Base date: Dec 12, 2024 (Friday) - the anchor for period calculations
   baseDate: new Date(2024, 11, 12), // Month is 0-indexed, so 11 = December
-  // Rates (matching spreadsheet)
+  // Rates (will be fetched from Google Sheets, these are fallbacks)
   hourlyRate: 45,
   taxRate: 0.04712,
+  ratesLoaded: false,
+
+  /**
+   * Fetch rates from Google Sheets via doGet()
+   */
+  async fetchRates() {
+    try {
+      const endpoint = ENDPOINTS['invisible-arts'];
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        mode: 'cors'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const rates = await response.json();
+      console.log('Fetched Invisible Arts rates:', rates);
+
+      if (rates.hourlyRate !== undefined) {
+        this.hourlyRate = parseFloat(rates.hourlyRate);
+      }
+      if (rates.taxRate !== undefined) {
+        this.taxRate = parseFloat(rates.taxRate);
+      }
+      this.ratesLoaded = true;
+    } catch (error) {
+      console.warn('Failed to fetch rates, using defaults:', error);
+      // Continue with default rates
+    }
+  },
 
   async init() {
     // Get client ID from URL
@@ -315,8 +347,15 @@ const RecurringInvoice = {
     }
 
     try {
-      DOM.showLoading('Loading client...');
-      App.currentClient = await SupabaseClient.getClient(clientId);
+      DOM.showLoading('Loading...');
+
+      // Fetch rates from Google Sheets and client data in parallel
+      await Promise.all([
+        this.fetchRates(),
+        (async () => {
+          App.currentClient = await SupabaseClient.getClient(clientId);
+        })()
+      ]);
 
       if (!App.currentClient) {
         DOM.showAlert('error', 'Error', 'Client not found');
@@ -665,9 +704,41 @@ const RecurringInvoice = {
 const TouchAHeartInvoice = {
   months: ['January', 'February', 'March', 'April', 'May', 'June',
            'July', 'August', 'September', 'October', 'November', 'December'],
-  // Rates (matching spreadsheet)
+  // Rates (will be fetched from Google Sheets, these are fallbacks)
   retainerAmount: 2500,
   taxRate: 0.0471,
+  ratesLoaded: false,
+
+  /**
+   * Fetch rates from Google Sheets via doGet()
+   */
+  async fetchRates() {
+    try {
+      const endpoint = ENDPOINTS['touch-a-heart'];
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        mode: 'cors'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const rates = await response.json();
+      console.log('Fetched Touch A Heart rates:', rates);
+
+      if (rates.retainerAmount !== undefined) {
+        this.retainerAmount = parseFloat(rates.retainerAmount);
+      }
+      if (rates.taxRate !== undefined) {
+        this.taxRate = parseFloat(rates.taxRate);
+      }
+      this.ratesLoaded = true;
+    } catch (error) {
+      console.warn('Failed to fetch rates, using defaults:', error);
+      // Continue with default rates
+    }
+  },
 
   /**
    * Generate invoice number based on invoice date
@@ -702,15 +773,26 @@ const TouchAHeartInvoice = {
     const urlParams = new URLSearchParams(window.location.search);
     const clientId = urlParams.get('client');
 
-    if (clientId) {
-      try {
-        DOM.showLoading('Loading client...');
-        App.currentClient = await SupabaseClient.getClient(clientId);
-      } catch (error) {
-        console.error('Failed to load client:', error);
-      } finally {
-        DOM.hideLoading();
+    try {
+      DOM.showLoading('Loading...');
+
+      // Fetch rates from Google Sheets
+      const fetchPromises = [this.fetchRates()];
+
+      // Also fetch client if specified
+      if (clientId) {
+        fetchPromises.push(
+          (async () => {
+            App.currentClient = await SupabaseClient.getClient(clientId);
+          })()
+        );
       }
+
+      await Promise.all(fetchPromises);
+    } catch (error) {
+      console.error('Failed to load:', error);
+    } finally {
+      DOM.hideLoading();
     }
 
     this.populateForm();
