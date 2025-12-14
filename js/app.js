@@ -300,6 +300,9 @@ const RecurringInvoice = {
   expenseCount: 1,
   // Base date: Dec 12, 2024 (Friday) - the anchor for period calculations
   baseDate: new Date(2024, 11, 12), // Month is 0-indexed, so 11 = December
+  // Rates (matching spreadsheet)
+  hourlyRate: 45,
+  taxRate: 0.04712,
 
   async init() {
     // Get client ID from URL
@@ -421,6 +424,38 @@ const RecurringInvoice = {
   },
 
   /**
+   * Generate invoice number based on period end date
+   * Format: IA + YYYYMMDD + -1 (e.g., IA20251226-1)
+   */
+  generateInvoiceNumber(periodEnd) {
+    const year = periodEnd.getFullYear();
+    const month = String(periodEnd.getMonth() + 1).padStart(2, '0');
+    const day = String(periodEnd.getDate()).padStart(2, '0');
+    return `IA${year}${month}${day}-1`;
+  },
+
+  /**
+   * Calculate invoice totals
+   */
+  calculateTotals(totalHours, expensesTotal) {
+    const hoursSubtotal = totalHours * this.hourlyRate;
+    const tax = hoursSubtotal * this.taxRate;
+    const grandTotal = hoursSubtotal + tax + expensesTotal;
+    return {
+      hoursSubtotal,
+      tax,
+      grandTotal
+    };
+  },
+
+  /**
+   * Format currency
+   */
+  formatCurrency(amount) {
+    return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  },
+
+  /**
    * Update the pay period display
    */
   updatePayPeriodDisplay() {
@@ -532,9 +567,14 @@ const RecurringInvoice = {
     const totalHours = week1Hours + week2Hours;
     const expenses = this.getExpenses().filter(exp => exp.description && exp.amount > 0);
     const expensesTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totals = this.calculateTotals(totalHours, expensesTotal);
+    const invoiceNumber = this.generateInvoiceNumber(period.periodEnd);
 
     let modalContent = '';
-    modalContent += ConfirmModal.section('Send To', sendTo);
+    modalContent += ConfirmModal.grid([
+      { label: 'Invoice #', value: invoiceNumber, highlight: true },
+      { label: 'Send To', value: sendTo }
+    ]);
     modalContent += ConfirmModal.divider();
     modalContent += ConfirmModal.section('Pay Period',
       `${this.formatDate(period.periodStart)} - ${this.formatDate(period.periodEnd)}`, true);
@@ -547,14 +587,26 @@ const RecurringInvoice = {
       { label: 'Week 1 Hours', value: week1Hours },
       { label: 'Week 2 Hours', value: week2Hours }
     ]);
-    modalContent += ConfirmModal.section('Total Hours', totalHours, true);
+    modalContent += ConfirmModal.grid([
+      { label: 'Total Hours', value: totalHours, highlight: true },
+      { label: 'Rate', value: `${this.formatCurrency(this.hourlyRate)}/hr` }
+    ]);
 
     if (expenses.length > 0) {
       modalContent += ConfirmModal.divider();
       modalContent += ConfirmModal.section('Expenses',
-        expenses.map(exp => `${exp.description}: $${exp.amount.toFixed(2)}`).join('<br>'));
-      modalContent += ConfirmModal.section('Expenses Total', `$${expensesTotal.toFixed(2)}`, true);
+        expenses.map(exp => `${exp.description}: ${this.formatCurrency(exp.amount)}`).join('<br>'));
     }
+
+    modalContent += ConfirmModal.divider();
+    modalContent += ConfirmModal.grid([
+      { label: 'Hours Subtotal', value: this.formatCurrency(totals.hoursSubtotal) },
+      { label: 'Tax (4.712%)', value: this.formatCurrency(totals.tax) }
+    ]);
+    if (expensesTotal > 0) {
+      modalContent += ConfirmModal.section('Expenses', this.formatCurrency(expensesTotal));
+    }
+    modalContent += ConfirmModal.section('Invoice Total', this.formatCurrency(totals.grandTotal), true);
 
     if (projectDescription) {
       modalContent += ConfirmModal.divider();
@@ -613,6 +665,38 @@ const RecurringInvoice = {
 const TouchAHeartInvoice = {
   months: ['January', 'February', 'March', 'April', 'May', 'June',
            'July', 'August', 'September', 'October', 'November', 'December'],
+  // Rates (matching spreadsheet)
+  retainerAmount: 2500,
+  taxRate: 0.0471,
+
+  /**
+   * Generate invoice number based on invoice date
+   * Format: TAH + YYYYMMDD + -1 (e.g., TAH20251225-1)
+   */
+  generateInvoiceNumber(invoiceDate) {
+    const date = new Date(invoiceDate + 'T00:00:00');
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `TAH${year}${month}${day}-1`;
+  },
+
+  /**
+   * Calculate invoice totals
+   */
+  calculateTotals() {
+    const subtotal = this.retainerAmount;
+    const tax = subtotal * this.taxRate;
+    const total = subtotal + tax;
+    return { subtotal, tax, total };
+  },
+
+  /**
+   * Format currency
+   */
+  formatCurrency(amount) {
+    return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  },
 
   async init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -737,15 +821,28 @@ Projected Scope of Work:
       month: 'short', day: 'numeric', year: 'numeric'
     });
 
+    // Calculate totals and generate invoice number
+    const totals = this.calculateTotals();
+    const invoiceNumber = this.generateInvoiceNumber(invoiceDate);
+
     // Build confirmation modal content
     let modalContent = '';
-    modalContent += ConfirmModal.section('Send To', sendTo);
+    modalContent += ConfirmModal.grid([
+      { label: 'Invoice #', value: invoiceNumber, highlight: true },
+      { label: 'Send To', value: sendTo }
+    ]);
     modalContent += ConfirmModal.divider();
     modalContent += ConfirmModal.section('Invoice Date', formattedInvoiceDate);
-    modalContent += ConfirmModal.section('Retainer For', `${retainerMonth} ${retainerYear}`, true);
-    modalContent += ConfirmModal.section('Billing Period', `${billingMonth} ${billingYear}`);
+    modalContent += ConfirmModal.grid([
+      { label: 'Retainer For', value: `${retainerMonth} ${retainerYear}`, highlight: true },
+      { label: 'Billing Period', value: `${billingMonth} ${billingYear}` }
+    ]);
     modalContent += ConfirmModal.divider();
-    modalContent += ConfirmModal.section('Amount', '$2,500.00 + tax', true);
+    modalContent += ConfirmModal.grid([
+      { label: 'Retainer', value: this.formatCurrency(totals.subtotal) },
+      { label: 'Tax (4.71%)', value: this.formatCurrency(totals.tax) }
+    ]);
+    modalContent += ConfirmModal.section('Invoice Total', this.formatCurrency(totals.total), true);
     modalContent += ConfirmModal.divider();
 
     // Truncate description for display if too long
