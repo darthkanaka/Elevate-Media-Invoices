@@ -471,12 +471,8 @@ const TouchAHeartInvoice = {
     const monthIndex = this.months.indexOf(invoiceMonthSelect.value);
     const year = parseInt(invoiceYearInput?.value) || new Date().getFullYear();
 
-    // Get last day of invoice month
-    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-
-    // Submit date is 5 days before end of month
-    const submitDay = Math.max(1, lastDay - 5);
-    const submitDate = new Date(year, monthIndex, submitDay);
+    // Submit date is the 25th of the invoice month
+    const submitDate = new Date(year, monthIndex, 25);
 
     // Format as YYYY-MM-DD
     const formatted = submitDate.toISOString().split('T')[0];
