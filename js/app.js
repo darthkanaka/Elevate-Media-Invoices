@@ -4,7 +4,7 @@
 
 // Google Apps Script endpoints
 const ENDPOINTS = {
-  'invisible-arts': 'https://script.google.com/macros/s/AKfycbyXunWS9R16yK7H0WS1cMUNxvMdoWK403vHnHvut0kCmw7f4LpE5GHt466Ou2xb6-x4/exec',
+  'invisible-arts': 'https://script.google.com/macros/s/AKfycbzFz3fZ529--0qY1_wtewVihq5CUPtCl0CBUxN8tuLDc1Rh56-uvE-CG8QGFagvMJVJ/exec',
   'touch-a-heart': 'https://script.google.com/macros/s/AKfycbxSsPa7iyNz1re27zsrXjOGOzieh1XaSBkozWH0igYfxIr-1Vg1QruqPnQqnNJpXPCw/exec'
 };
 
