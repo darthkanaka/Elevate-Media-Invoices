@@ -185,6 +185,8 @@ const Dashboard = {
  */
 const RecurringInvoice = {
   expenseCount: 1,
+  // Base date: Dec 12, 2024 (Friday) - the anchor for period calculations
+  baseDate: new Date(2024, 11, 12), // Month is 0-indexed, so 11 = December
 
   async init() {
     // Get client ID from URL
@@ -207,6 +209,7 @@ const RecurringInvoice = {
 
       this.populateForm();
       this.setupEventListeners();
+      this.updatePayPeriodDisplay();
     } catch (error) {
       console.error('Failed to load client:', error);
       DOM.showAlert('error', 'Error Loading Client', error.message);
@@ -249,6 +252,85 @@ const RecurringInvoice = {
     const addExpenseBtn = DOM.$('add-expense-btn');
     if (addExpenseBtn) {
       addExpenseBtn.addEventListener('click', () => this.addExpenseRow());
+    }
+
+    // Periods forward change
+    const periodsInput = DOM.$('periods-forward');
+    if (periodsInput) {
+      periodsInput.addEventListener('change', () => this.updatePayPeriodDisplay());
+      periodsInput.addEventListener('input', () => this.updatePayPeriodDisplay());
+    }
+  },
+
+  /**
+   * Calculate pay period dates based on periods forward
+   */
+  calculatePayPeriod(periodsForward) {
+    // Each period is 14 days (2 weeks)
+    // Period end is the Friday of submission
+    const periodEndDate = new Date(this.baseDate);
+    periodEndDate.setDate(periodEndDate.getDate() + (periodsForward * 14));
+
+    // Period starts 13 days before end (14-day period inclusive)
+    const periodStartDate = new Date(periodEndDate);
+    periodStartDate.setDate(periodStartDate.getDate() - 13);
+
+    // Week 1: first 7 days (Sat-Fri)
+    const week1Start = new Date(periodStartDate);
+    const week1End = new Date(periodStartDate);
+    week1End.setDate(week1End.getDate() + 6);
+
+    // Week 2: last 7 days (Sat-Fri)
+    const week2Start = new Date(week1End);
+    week2Start.setDate(week2Start.getDate() + 1);
+    const week2End = new Date(periodEndDate);
+
+    return {
+      periodStart: periodStartDate,
+      periodEnd: periodEndDate,
+      week1Start,
+      week1End,
+      week2Start,
+      week2End
+    };
+  },
+
+  /**
+   * Format date as "Mon DD, YYYY" or "Mon DD" (short)
+   */
+  formatDate(date, includeYear = true) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    return includeYear ? `${month} ${day}, ${year}` : `${month} ${day}`;
+  },
+
+  /**
+   * Update the pay period display
+   */
+  updatePayPeriodDisplay() {
+    const periodsInput = DOM.$('periods-forward');
+    if (!periodsInput) return;
+
+    const periodsForward = parseInt(periodsInput.value) || 1;
+    const period = this.calculatePayPeriod(periodsForward);
+
+    // Update main period dates
+    const periodStartEl = DOM.$('period-start');
+    const periodEndEl = DOM.$('period-end');
+    if (periodStartEl) periodStartEl.textContent = this.formatDate(period.periodStart);
+    if (periodEndEl) periodEndEl.textContent = this.formatDate(period.periodEnd);
+
+    // Update week dates
+    const week1DatesEl = DOM.$('week1-dates');
+    const week2DatesEl = DOM.$('week2-dates');
+    if (week1DatesEl) {
+      week1DatesEl.textContent = `${this.formatDate(period.week1Start, false)} - ${this.formatDate(period.week1End, false)}`;
+    }
+    if (week2DatesEl) {
+      week2DatesEl.textContent = `${this.formatDate(period.week2Start, false)} - ${this.formatDate(period.week2End, false)}`;
     }
   },
 
@@ -307,6 +389,7 @@ const RecurringInvoice = {
     const week1Hours = parseFloat(DOM.$('week1-hours')?.value) || 0;
     const week2Hours = parseFloat(DOM.$('week2-hours')?.value) || 0;
     const projectDescription = DOM.$('project-description')?.value?.trim() || '';
+    const periodsForward = parseInt(DOM.$('periods-forward')?.value) || 1;
 
     // Validation
     if (!sendTo) {
@@ -314,12 +397,22 @@ const RecurringInvoice = {
       return;
     }
 
+    // Calculate pay period dates
+    const period = this.calculatePayPeriod(periodsForward);
+
     const payload = {
       week1Hours,
       week2Hours,
       projectDescription,
       sendTo,
-      expenses: this.getExpenses()
+      expenses: this.getExpenses(),
+      periodsForward,
+      periodStart: period.periodStart.toISOString().split('T')[0],
+      periodEnd: period.periodEnd.toISOString().split('T')[0],
+      week1Start: period.week1Start.toISOString().split('T')[0],
+      week1End: period.week1End.toISOString().split('T')[0],
+      week2Start: period.week2Start.toISOString().split('T')[0],
+      week2End: period.week2End.toISOString().split('T')[0]
     };
 
     console.log('Submitting Invisible Arts invoice:', payload);
@@ -348,6 +441,8 @@ const RecurringInvoice = {
       DOM.$('invoice-form')?.reset();
       DOM.$('week1-hours').value = '40';
       DOM.$('week2-hours').value = '40';
+      DOM.$('periods-forward').value = '1';
+      this.updatePayPeriodDisplay();
 
     } catch (error) {
       console.error('Failed to submit invoice:', error);
