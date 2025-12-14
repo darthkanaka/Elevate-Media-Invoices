@@ -121,6 +121,119 @@ const DOM = {
 };
 
 /**
+ * Confirmation Modal
+ */
+const ConfirmModal = {
+  overlay: null,
+  onConfirm: null,
+
+  /**
+   * Initialize modal (creates DOM elements)
+   */
+  init() {
+    if (this.overlay) return;
+
+    this.overlay = document.createElement('div');
+    this.overlay.id = 'confirm-modal-overlay';
+    this.overlay.className = 'modal-overlay';
+    this.overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="confirm-modal-title">Confirm Invoice</h2>
+          <button type="button" class="modal-close" id="confirm-modal-close">&times;</button>
+        </div>
+        <div class="modal-body" id="confirm-modal-body">
+          <!-- Content will be injected -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="confirm-modal-cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirm-modal-submit">Send Invoice</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(this.overlay);
+
+    // Event listeners
+    DOM.$('confirm-modal-close').addEventListener('click', () => this.hide());
+    DOM.$('confirm-modal-cancel').addEventListener('click', () => this.hide());
+    DOM.$('confirm-modal-submit').addEventListener('click', () => {
+      if (this.onConfirm) {
+        this.onConfirm();
+      }
+      this.hide();
+    });
+
+    // Close on overlay click
+    this.overlay.addEventListener('click', (e) => {
+      if (e.target === this.overlay) {
+        this.hide();
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
+        this.hide();
+      }
+    });
+  },
+
+  /**
+   * Show modal with content
+   */
+  show(title, bodyHtml, onConfirm) {
+    this.init();
+    DOM.$('confirm-modal-title').textContent = title;
+    DOM.$('confirm-modal-body').innerHTML = bodyHtml;
+    this.onConfirm = onConfirm;
+    this.overlay.classList.add('active');
+  },
+
+  /**
+   * Hide modal
+   */
+  hide() {
+    if (this.overlay) {
+      this.overlay.classList.remove('active');
+      this.onConfirm = null;
+    }
+  },
+
+  /**
+   * Helper: Create a section for the modal
+   */
+  section(label, value, highlight = false) {
+    return `
+      <div class="confirm-section">
+        <div class="confirm-label">${label}</div>
+        <div class="confirm-value${highlight ? ' highlight' : ''}">${value}</div>
+      </div>
+    `;
+  },
+
+  /**
+   * Helper: Create a grid section
+   */
+  grid(items) {
+    const itemsHtml = items.map(item =>
+      `<div class="confirm-section">
+        <div class="confirm-label">${item.label}</div>
+        <div class="confirm-value${item.highlight ? ' highlight' : ''}">${item.value}</div>
+      </div>`
+    ).join('');
+    return `<div class="confirm-grid">${itemsHtml}</div>`;
+  },
+
+  /**
+   * Helper: Divider
+   */
+  divider() {
+    return '<div class="confirm-divider"></div>';
+  }
+};
+
+/**
  * Dashboard Functions
  */
 const Dashboard = {
@@ -381,7 +494,7 @@ const RecurringInvoice = {
     return expenses;
   },
 
-  async handleSubmit(e) {
+  handleSubmit(e) {
     e.preventDefault();
     DOM.clearAlerts();
 
@@ -415,6 +528,46 @@ const RecurringInvoice = {
       week2End: period.week2End.toISOString().split('T')[0]
     };
 
+    // Build confirmation modal content
+    const totalHours = week1Hours + week2Hours;
+    const expenses = this.getExpenses().filter(exp => exp.description && exp.amount > 0);
+    const expensesTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+    let modalContent = '';
+    modalContent += ConfirmModal.section('Send To', sendTo);
+    modalContent += ConfirmModal.divider();
+    modalContent += ConfirmModal.section('Pay Period',
+      `${this.formatDate(period.periodStart)} - ${this.formatDate(period.periodEnd)}`, true);
+    modalContent += ConfirmModal.grid([
+      { label: 'Week 1', value: `${this.formatDate(period.week1Start, false)} - ${this.formatDate(period.week1End, false)}` },
+      { label: 'Week 2', value: `${this.formatDate(period.week2Start, false)} - ${this.formatDate(period.week2End, false)}` }
+    ]);
+    modalContent += ConfirmModal.divider();
+    modalContent += ConfirmModal.grid([
+      { label: 'Week 1 Hours', value: week1Hours },
+      { label: 'Week 2 Hours', value: week2Hours }
+    ]);
+    modalContent += ConfirmModal.section('Total Hours', totalHours, true);
+
+    if (expenses.length > 0) {
+      modalContent += ConfirmModal.divider();
+      modalContent += ConfirmModal.section('Expenses',
+        expenses.map(exp => `${exp.description}: $${exp.amount.toFixed(2)}`).join('<br>'));
+      modalContent += ConfirmModal.section('Expenses Total', `$${expensesTotal.toFixed(2)}`, true);
+    }
+
+    if (projectDescription) {
+      modalContent += ConfirmModal.divider();
+      modalContent += ConfirmModal.section('Project Description', projectDescription);
+    }
+
+    // Show confirmation modal
+    ConfirmModal.show('Confirm Invoice - Invisible Arts', modalContent, () => {
+      this.submitInvoice(payload);
+    });
+  },
+
+  async submitInvoice(payload) {
     console.log('Submitting Invisible Arts invoice:', payload);
 
     try {
@@ -546,7 +699,7 @@ Projected Scope of Work:
 • Workload rollover from previous month`;
   },
 
-  async handleSubmit(e) {
+  handleSubmit(e) {
     e.preventDefault();
     DOM.clearAlerts();
 
@@ -578,6 +731,36 @@ Projected Scope of Work:
       sendTo
     };
 
+    // Format invoice date for display
+    const invoiceDateObj = new Date(invoiceDate + 'T00:00:00');
+    const formattedInvoiceDate = invoiceDateObj.toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+
+    // Build confirmation modal content
+    let modalContent = '';
+    modalContent += ConfirmModal.section('Send To', sendTo);
+    modalContent += ConfirmModal.divider();
+    modalContent += ConfirmModal.section('Invoice Date', formattedInvoiceDate);
+    modalContent += ConfirmModal.section('Retainer For', `${retainerMonth} ${retainerYear}`, true);
+    modalContent += ConfirmModal.section('Billing Period', `${billingMonth} ${billingYear}`);
+    modalContent += ConfirmModal.divider();
+    modalContent += ConfirmModal.section('Amount', '$2,500.00 + tax', true);
+    modalContent += ConfirmModal.divider();
+
+    // Truncate description for display if too long
+    const displayDesc = description.length > 200
+      ? description.substring(0, 200) + '...'
+      : description;
+    modalContent += ConfirmModal.section('Description', displayDesc.replace(/\n/g, '<br>'));
+
+    // Show confirmation modal
+    ConfirmModal.show('Confirm Invoice - Touch A Heart', modalContent, () => {
+      this.submitInvoice(payload);
+    });
+  },
+
+  async submitInvoice(payload) {
     console.log('Submitting Touch A Heart invoice:', payload);
     console.log('Endpoint:', ENDPOINTS['touch-a-heart']);
 
