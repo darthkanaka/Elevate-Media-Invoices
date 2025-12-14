@@ -4,7 +4,14 @@
 
 // Google Apps Script endpoints
 const ENDPOINTS = {
-  'invisible-arts': 'https://script.google.com/macros/s/AKfycby5rH_SZXZmJAoiHE5dJttJaDBAvegQYzn0Jtd5Zg89OHCbzz0Mo8Ht6P8oVyHrXU8S/exec'
+  'invisible-arts': 'https://script.google.com/macros/s/AKfycby5rH_SZXZmJAoiHE5dJttJaDBAvegQYzn0Jtd5Zg89OHCbzz0Mo8Ht6P8oVyHrXU8S/exec',
+  'touch-a-heart': 'https://script.google.com/macros/s/AKfycbw6704L7xpa3GPQkzIBuqsiKR2mN3t_rtcg-Newyf3fhXbjPVLQazAWfQzxRwB6K3k3/exec'
+};
+
+// Client slug mapping (client name -> form page)
+const CLIENT_FORMS = {
+  'invisible arts': 'invoice.html',
+  'touch a heart': 'touch-a-heart.html'
 };
 
 /**
@@ -146,15 +153,23 @@ const Dashboard = {
       return;
     }
 
-    recurringList.innerHTML = recurringClients.map(client => `
-      <a href="recurring/invoice.html?client=${client.id}" class="client-item">
-        <div class="client-info">
-          <span class="client-name">${this.escapeHtml(client.name)}</span>
-          <span class="client-meta">${this.escapeHtml(client.send_to_email || client.billing_email || 'No email')}</span>
-        </div>
-        <span class="client-arrow">&rarr;</span>
-      </a>
-    `).join('');
+    recurringList.innerHTML = recurringClients.map(client => {
+      const formPage = this.getFormPage(client.name);
+      return `
+        <a href="recurring/${formPage}?client=${client.id}" class="client-item">
+          <div class="client-info">
+            <span class="client-name">${this.escapeHtml(client.name)}</span>
+            <span class="client-meta">${this.escapeHtml(client.send_to_email || client.billing_email || 'No email')}</span>
+          </div>
+          <span class="client-arrow">&rarr;</span>
+        </a>
+      `;
+    }).join('');
+  },
+
+  getFormPage(clientName) {
+    const slug = clientName.toLowerCase().trim();
+    return CLIENT_FORMS[slug] || 'invoice.html';
   },
 
   escapeHtml(text) {
@@ -343,6 +358,205 @@ const RecurringInvoice = {
 };
 
 /**
+ * Touch A Heart Invoice Form Functions
+ */
+const TouchAHeartInvoice = {
+  months: ['January', 'February', 'March', 'April', 'May', 'June',
+           'July', 'August', 'September', 'October', 'November', 'December'],
+
+  async init() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const clientId = urlParams.get('client');
+
+    if (clientId) {
+      try {
+        DOM.showLoading('Loading client...');
+        App.currentClient = await SupabaseClient.getClient(clientId);
+      } catch (error) {
+        console.error('Failed to load client:', error);
+      } finally {
+        DOM.hideLoading();
+      }
+    }
+
+    this.populateForm();
+    this.setupEventListeners();
+  },
+
+  populateForm() {
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-indexed
+    const currentYear = now.getFullYear();
+
+    // Invoice month/year (current month)
+    const invoiceMonthSelect = DOM.$('invoice-month');
+    const invoiceYearInput = DOM.$('invoice-year');
+    if (invoiceMonthSelect) invoiceMonthSelect.value = this.months[currentMonth];
+    if (invoiceYearInput) invoiceYearInput.value = currentYear;
+
+    // Billing period (previous month)
+    const billingMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const billingYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const billingMonthSelect = DOM.$('billing-month');
+    const billingYearInput = DOM.$('billing-year');
+    if (billingMonthSelect) billingMonthSelect.value = this.months[billingMonth];
+    if (billingYearInput) billingYearInput.value = billingYear;
+
+    // Submit date (5 days before end of invoice month)
+    this.updateSubmitDate();
+
+    // Description
+    this.updateDescription();
+
+    // Send to email from client or default
+    const sendToInput = DOM.$('send-to');
+    if (sendToInput) {
+      const defaultEmail = 'robin@touchahearthawaii.org, touchaheart@ap.ramp.com, support@upstreambookkeeping.com';
+      sendToInput.value = App.currentClient?.send_to_email || defaultEmail;
+    }
+  },
+
+  setupEventListeners() {
+    const form = DOM.$('invoice-form');
+    if (form) {
+      form.addEventListener('submit', (e) => this.handleSubmit(e));
+    }
+
+    // Update submit date and description when month/year changes
+    const invoiceMonth = DOM.$('invoice-month');
+    const invoiceYear = DOM.$('invoice-year');
+
+    if (invoiceMonth) {
+      invoiceMonth.addEventListener('change', () => {
+        this.updateSubmitDate();
+        this.updateDescription();
+        this.updateBillingPeriod();
+      });
+    }
+    if (invoiceYear) {
+      invoiceYear.addEventListener('change', () => {
+        this.updateSubmitDate();
+        this.updateDescription();
+        this.updateBillingPeriod();
+      });
+    }
+  },
+
+  updateBillingPeriod() {
+    const invoiceMonthSelect = DOM.$('invoice-month');
+    const invoiceYearInput = DOM.$('invoice-year');
+    const billingMonthSelect = DOM.$('billing-month');
+    const billingYearInput = DOM.$('billing-year');
+
+    if (!invoiceMonthSelect || !billingMonthSelect) return;
+
+    const invoiceMonthIndex = this.months.indexOf(invoiceMonthSelect.value);
+    const invoiceYear = parseInt(invoiceYearInput?.value) || new Date().getFullYear();
+
+    // Billing period is previous month
+    const billingMonthIndex = invoiceMonthIndex === 0 ? 11 : invoiceMonthIndex - 1;
+    const billingYear = invoiceMonthIndex === 0 ? invoiceYear - 1 : invoiceYear;
+
+    billingMonthSelect.value = this.months[billingMonthIndex];
+    if (billingYearInput) billingYearInput.value = billingYear;
+  },
+
+  updateSubmitDate() {
+    const invoiceMonthSelect = DOM.$('invoice-month');
+    const invoiceYearInput = DOM.$('invoice-year');
+    const submitDateInput = DOM.$('submit-date');
+
+    if (!invoiceMonthSelect || !submitDateInput) return;
+
+    const monthIndex = this.months.indexOf(invoiceMonthSelect.value);
+    const year = parseInt(invoiceYearInput?.value) || new Date().getFullYear();
+
+    // Get last day of invoice month
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+
+    // Submit date is 5 days before end of month
+    const submitDay = Math.max(1, lastDay - 5);
+    const submitDate = new Date(year, monthIndex, submitDay);
+
+    // Format as YYYY-MM-DD
+    const formatted = submitDate.toISOString().split('T')[0];
+    submitDateInput.value = formatted;
+  },
+
+  updateDescription() {
+    const invoiceMonthSelect = DOM.$('invoice-month');
+    const invoiceYearInput = DOM.$('invoice-year');
+    const descriptionTextarea = DOM.$('description');
+
+    if (!invoiceMonthSelect || !descriptionTextarea) return;
+
+    const month = invoiceMonthSelect.value;
+    const year = invoiceYearInput?.value || new Date().getFullYear();
+
+    descriptionTextarea.value = `Monthly Retainer for the month of ${month}, ${year}
+
+Projected Scope of Work:
+• Post production for event videos
+• On-going Consultations and Planning
+• Workload rollover from previous month`;
+  },
+
+  async handleSubmit(e) {
+    e.preventDefault();
+    DOM.clearAlerts();
+
+    const sendTo = DOM.$('send-to')?.value?.trim();
+    const invoiceMonth = DOM.$('invoice-month')?.value;
+    const invoiceYear = parseInt(DOM.$('invoice-year')?.value);
+    const billingMonth = DOM.$('billing-month')?.value;
+    const billingYear = parseInt(DOM.$('billing-year')?.value);
+    const submitDate = DOM.$('submit-date')?.value;
+    const description = DOM.$('description')?.value?.trim();
+
+    // Validation
+    if (!sendTo) {
+      DOM.showAlert('error', 'Validation Error', 'Please enter an email address');
+      return;
+    }
+
+    const payload = {
+      invoiceMonth,
+      invoiceYear,
+      billingMonth,
+      billingYear,
+      submitDate,
+      description,
+      sendTo
+    };
+
+    try {
+      DOM.showLoading('Submitting invoice...');
+
+      const endpoint = ENDPOINTS['touch-a-heart'];
+
+      await fetch(endpoint, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      DOM.showAlert('success', 'Invoice Submitted!',
+        'The invoice has been generated and emailed. Check your inbox shortly.');
+
+    } catch (error) {
+      console.error('Failed to submit invoice:', error);
+      DOM.showAlert('error', 'Submission Failed',
+        'There was an error submitting the invoice. Please try again.');
+    } finally {
+      DOM.hideLoading();
+    }
+  }
+};
+
+/**
  * New Client Form Functions
  */
 const NewClient = {
@@ -415,6 +629,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (path.endsWith('index.html') || path.endsWith('/')) {
     Dashboard.init();
+  } else if (path.includes('/recurring/touch-a-heart')) {
+    TouchAHeartInvoice.init();
   } else if (path.includes('/recurring/')) {
     RecurringInvoice.init();
   } else if (path.includes('/clients/new')) {
