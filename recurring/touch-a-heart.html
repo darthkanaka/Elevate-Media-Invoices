@@ -25,6 +25,21 @@
 
     <!-- Invoice Form -->
     <form id="invoice-form" class="card">
+      <!-- Send To -->
+      <div class="form-group">
+        <label for="send-to" class="form-label">
+          Send To <span class="required">*</span>
+        </label>
+        <input
+          type="text"
+          id="send-to"
+          class="form-input"
+          placeholder="email@example.com"
+          required
+        >
+        <p class="form-hint">Separate multiple emails with commas</p>
+      </div>
+
       <!-- Invoice Date -->
       <div class="form-group">
         <label for="invoice-date" class="form-label">Invoice Date</label>
@@ -75,21 +90,6 @@
           class="form-textarea"
           rows="8"
         ></textarea>
-      </div>
-
-      <!-- Send To -->
-      <div class="form-group">
-        <label for="send-to" class="form-label">
-          Send To <span class="required">*</span>
-        </label>
-        <input
-          type="text"
-          id="send-to"
-          class="form-input"
-          placeholder="email@example.com"
-          required
-        >
-        <p class="form-hint">Separate multiple emails with commas</p>
       </div>
 
       <!-- Submit Button -->
