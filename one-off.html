@@ -18,29 +18,214 @@
 
   <!-- Main Content -->
   <main class="container">
-    <div class="card">
-      <div class="placeholder">
-        <div class="placeholder-icon">&#128221;</div>
-        <h1 class="placeholder-title">Coming Soon</h1>
-        <p class="placeholder-text">
-          The one-off invoice feature is currently under development.
-          This will allow you to create custom invoices with flexible line items and date ranges.
-        </p>
+    <h1 class="page-title" id="page-title">One-Off Invoice</h1>
 
-        <h3 style="margin-bottom: 0.75rem; color: var(--text-primary);">Planned Features:</h3>
-        <ul style="text-align: left; max-width: 300px; margin: 0 auto 1.5rem; color: var(--text-secondary);">
-          <li>Select existing client or add new</li>
-          <li>Custom line items with descriptions</li>
-          <li>Flexible date ranges</li>
-          <li>Manual PDF generation</li>
-          <li>Email or download options</li>
-        </ul>
+    <!-- Alert Container -->
+    <div id="alert-container"></div>
 
-        <a href="index.html" class="btn btn-primary">
-          &larr; Return to Dashboard
-        </a>
+    <!-- Invoice Form -->
+    <form id="invoice-form">
+      <!-- Client Selection -->
+      <div class="card">
+        <h2 class="card-title">Client</h2>
+
+        <div class="form-group">
+          <label class="form-label">Client Type</label>
+          <div class="client-type-toggle">
+            <label class="toggle-option">
+              <input type="radio" name="client-type" value="existing" checked>
+              <span>Existing Client</span>
+            </label>
+            <label class="toggle-option">
+              <input type="radio" name="client-type" value="new">
+              <span>New Client</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Existing Client Selector -->
+        <div id="existing-client-section">
+          <div class="form-group">
+            <label for="client-select" class="form-label">
+              Select Client <span class="required">*</span>
+            </label>
+            <select id="client-select" class="form-select">
+              <option value="">-- Select a client --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- New Client Fields -->
+        <div id="new-client-section" class="hidden">
+          <div class="form-group">
+            <label for="company-name" class="form-label">
+              Company Name <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="company-name"
+              class="form-input"
+              placeholder="Company or Client Name"
+            >
+          </div>
+
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label for="attn-name" class="form-label">ATTN (Contact Name)</label>
+              <input
+                type="text"
+                id="attn-name"
+                class="form-input"
+                placeholder="Contact Name"
+              >
+            </div>
+            <div class="form-group">
+              <label for="client-phone" class="form-label">Phone</label>
+              <input
+                type="tel"
+                id="client-phone"
+                class="form-input"
+                placeholder="(808) 555-5555"
+              >
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="client-email" class="form-label">Email</label>
+            <input
+              type="email"
+              id="client-email"
+              class="form-input"
+              placeholder="billing@company.com"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="client-address" class="form-label">Address</label>
+            <textarea
+              id="client-address"
+              class="form-textarea"
+              placeholder="Street Address&#10;City, State ZIP"
+              rows="2"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <input type="checkbox" id="save-client"> Save this client for future use
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <!-- Invoice Details -->
+      <div class="card">
+        <h2 class="card-title">Invoice Details</h2>
+
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label for="invoice-number" class="form-label">Invoice Number</label>
+            <input
+              type="text"
+              id="invoice-number"
+              class="form-input"
+              readonly
+              placeholder="Auto-generated"
+            >
+            <div class="form-hint">Auto-generated based on client name and date</div>
+          </div>
+          <div class="form-group">
+            <label for="invoice-version" class="form-label">Version</label>
+            <select id="invoice-version" class="form-select">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </select>
+            <div class="form-hint">Increment for revised invoices</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="send-to" class="form-label">
+            Send To <span class="required">*</span>
+          </label>
+          <input
+            type="email"
+            id="send-to"
+            class="form-input"
+            placeholder="email@company.com"
+            required
+          >
+          <div class="form-hint">Separate multiple emails with commas</div>
+        </div>
+      </div>
+
+      <!-- Project Description -->
+      <div class="card">
+        <h2 class="card-title">Project / Scope of Work</h2>
+
+        <div class="form-group">
+          <label for="project-description" class="form-label">Description</label>
+          <textarea
+            id="project-description"
+            class="form-textarea"
+            placeholder="Describe the project or scope of work..."
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="card">
+        <h2 class="card-title">Line Items</h2>
+
+        <div id="line-items-container" class="line-items-list">
+          <div class="line-item">
+            <input type="text" class="form-input line-item-description" placeholder="Description">
+            <input type="number" class="form-input line-item-amount" placeholder="0.00" step="0.01" min="0">
+            <button type="button" class="btn btn-danger btn-icon remove-line-btn" title="Remove" disabled>
+              &times;
+            </button>
+          </div>
+        </div>
+
+        <button type="button" id="add-line-btn" class="btn btn-secondary btn-sm mt-2">
+          + Add Line Item
+        </button>
+      </div>
+
+      <!-- Totals -->
+      <div class="card totals-card">
+        <h2 class="card-title">Invoice Total</h2>
+
+        <div class="totals-grid">
+          <div class="totals-row">
+            <span class="totals-label">Subtotal</span>
+            <span class="totals-value" id="subtotal">$0.00</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">Tax (4.712%)</span>
+            <span class="totals-value" id="tax-amount">$0.00</span>
+          </div>
+          <div class="totals-row totals-total">
+            <span class="totals-label">Total</span>
+            <span class="totals-value" id="grand-total">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="action-bar">
+        <a href="index.html" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Send Invoice</button>
+      </div>
+    </form>
   </main>
 
   <!-- Scripts -->
