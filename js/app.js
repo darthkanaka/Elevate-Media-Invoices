@@ -5,7 +5,8 @@
 // Google Apps Script endpoints
 const ENDPOINTS = {
   'invisible-arts': 'https://script.google.com/macros/s/AKfycbyr1FP88_UcGXUEqnXGUlUMYFtfvJ3IA2jdIHZN1fau00vB-dUyMRD4dWTo-HnezVMc/exec',
-  'touch-a-heart': 'https://script.google.com/macros/s/AKfycbxSsPa7iyNz1re27zsrXjOGOzieh1XaSBkozWH0igYfxIr-1Vg1QruqPnQqnNJpXPCw/exec'
+  'touch-a-heart': 'https://script.google.com/macros/s/AKfycbxSsPa7iyNz1re27zsrXjOGOzieh1XaSBkozWH0igYfxIr-1Vg1QruqPnQqnNJpXPCw/exec',
+  'one-off': '' // TODO: Add one-off invoice Apps Script endpoint
 };
 
 // Client slug mapping (client name -> form page)
@@ -975,6 +976,445 @@ Projected Scope of Work:
 };
 
 /**
+ * One-Off Invoice Form Functions
+ */
+const OneOffInvoice = {
+  clients: [],
+  selectedClient: null,
+  taxRate: 0.04712,
+  lineItemCount: 1,
+
+  async init() {
+    try {
+      DOM.showLoading('Loading...');
+      this.clients = await SupabaseClient.getClients();
+      this.populateClientDropdown();
+      this.setupEventListeners();
+      this.updateInvoiceNumber();
+      this.updateTotals();
+    } catch (error) {
+      console.error('Failed to load clients:', error);
+      DOM.showAlert('error', 'Error Loading Clients', error.message);
+    } finally {
+      DOM.hideLoading();
+    }
+  },
+
+  populateClientDropdown() {
+    const select = DOM.$('client-select');
+    if (!select) return;
+
+    // Clear existing options except the placeholder
+    select.innerHTML = '<option value="">-- Select a client --</option>';
+
+    this.clients.forEach(client => {
+      const option = document.createElement('option');
+      option.value = client.id;
+      option.textContent = client.name;
+      option.dataset.client = JSON.stringify(client);
+      select.appendChild(option);
+    });
+  },
+
+  setupEventListeners() {
+    // Client type toggle
+    const clientTypeRadios = document.querySelectorAll('input[name="client-type"]');
+    clientTypeRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => this.handleClientTypeChange(e));
+    });
+
+    // Existing client selection
+    const clientSelect = DOM.$('client-select');
+    if (clientSelect) {
+      clientSelect.addEventListener('change', (e) => this.handleClientSelect(e));
+    }
+
+    // New client name change (for invoice number)
+    const companyName = DOM.$('company-name');
+    if (companyName) {
+      companyName.addEventListener('input', () => this.updateInvoiceNumber());
+    }
+
+    // Version change
+    const versionSelect = DOM.$('invoice-version');
+    if (versionSelect) {
+      versionSelect.addEventListener('change', () => this.updateInvoiceNumber());
+    }
+
+    // Add line item button
+    const addLineBtn = DOM.$('add-line-btn');
+    if (addLineBtn) {
+      addLineBtn.addEventListener('click', () => this.addLineItem());
+    }
+
+    // Line item amount changes (delegate)
+    const lineItemsContainer = DOM.$('line-items-container');
+    if (lineItemsContainer) {
+      lineItemsContainer.addEventListener('input', (e) => {
+        if (e.target.classList.contains('line-item-amount')) {
+          this.updateTotals();
+        }
+      });
+    }
+
+    // Form submission
+    const form = DOM.$('invoice-form');
+    if (form) {
+      form.addEventListener('submit', (e) => this.handleSubmit(e));
+    }
+  },
+
+  handleClientTypeChange(e) {
+    const isExisting = e.target.value === 'existing';
+    const existingSection = DOM.$('existing-client-section');
+    const newSection = DOM.$('new-client-section');
+
+    if (existingSection) existingSection.classList.toggle('hidden', !isExisting);
+    if (newSection) newSection.classList.toggle('hidden', isExisting);
+
+    // Clear selected client when switching to new
+    if (!isExisting) {
+      this.selectedClient = null;
+      const clientSelect = DOM.$('client-select');
+      if (clientSelect) clientSelect.value = '';
+    }
+
+    this.updateInvoiceNumber();
+  },
+
+  handleClientSelect(e) {
+    const selectedOption = e.target.selectedOptions[0];
+    if (selectedOption && selectedOption.dataset.client) {
+      this.selectedClient = JSON.parse(selectedOption.dataset.client);
+
+      // Auto-fill send-to email
+      const sendToInput = DOM.$('send-to');
+      if (sendToInput && this.selectedClient.send_to_email) {
+        sendToInput.value = this.selectedClient.send_to_email;
+      }
+    } else {
+      this.selectedClient = null;
+    }
+
+    this.updateInvoiceNumber();
+  },
+
+  /**
+   * Generate initials from company name
+   * e.g., "Acme Corp" -> "AC", "Test Company LLC" -> "TCL"
+   */
+  generateInitials(name) {
+    if (!name) return 'XX';
+
+    // Split by spaces and get first letter of each word
+    const words = name.trim().split(/\s+/);
+    let initials = words.map(word => word.charAt(0).toUpperCase()).join('');
+
+    // Limit to 4 characters max
+    return initials.substring(0, 4) || 'XX';
+  },
+
+  /**
+   * Generate invoice number: INITIALS + YYYYMMDD + -VERSION
+   */
+  generateInvoiceNumber() {
+    let companyName = '';
+
+    // Check if existing or new client
+    const isExisting = document.querySelector('input[name="client-type"]:checked')?.value === 'existing';
+
+    if (isExisting && this.selectedClient) {
+      companyName = this.selectedClient.name;
+    } else {
+      companyName = DOM.$('company-name')?.value || '';
+    }
+
+    const initials = this.generateInitials(companyName);
+    const version = DOM.$('invoice-version')?.value || '1';
+
+    // Today's date
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+
+    return `${initials}${year}${month}${day}-${version}`;
+  },
+
+  updateInvoiceNumber() {
+    const invoiceNumberInput = DOM.$('invoice-number');
+    if (invoiceNumberInput) {
+      invoiceNumberInput.value = this.generateInvoiceNumber();
+    }
+  },
+
+  addLineItem() {
+    this.lineItemCount++;
+    const container = DOM.$('line-items-container');
+    if (!container) return;
+
+    const row = document.createElement('div');
+    row.className = 'line-item';
+    row.innerHTML = `
+      <input type="text" class="form-input line-item-description" placeholder="Description">
+      <input type="number" class="form-input line-item-amount" placeholder="0.00" step="0.01" min="0">
+      <button type="button" class="btn btn-danger btn-icon remove-line-btn" title="Remove">
+        &times;
+      </button>
+    `;
+
+    // Add remove handler
+    row.querySelector('.remove-line-btn').addEventListener('click', () => {
+      row.remove();
+      this.updateRemoveButtons();
+      this.updateTotals();
+    });
+
+    container.appendChild(row);
+    this.updateRemoveButtons();
+  },
+
+  updateRemoveButtons() {
+    const container = DOM.$('line-items-container');
+    if (!container) return;
+
+    const rows = container.querySelectorAll('.line-item');
+    rows.forEach((row, index) => {
+      const removeBtn = row.querySelector('.remove-line-btn');
+      if (removeBtn) {
+        // Disable remove button if only one row left
+        removeBtn.disabled = rows.length === 1;
+      }
+    });
+  },
+
+  getLineItems() {
+    const container = DOM.$('line-items-container');
+    if (!container) return [];
+
+    const items = [];
+    const rows = container.querySelectorAll('.line-item');
+
+    rows.forEach(row => {
+      const description = row.querySelector('.line-item-description')?.value?.trim() || '';
+      const amount = parseFloat(row.querySelector('.line-item-amount')?.value) || 0;
+
+      if (description || amount > 0) {
+        items.push({ description, amount });
+      }
+    });
+
+    return items;
+  },
+
+  calculateTotals() {
+    const lineItems = this.getLineItems();
+    const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+    const tax = subtotal * this.taxRate;
+    const total = subtotal + tax;
+
+    return { subtotal, tax, total };
+  },
+
+  updateTotals() {
+    const totals = this.calculateTotals();
+
+    const subtotalEl = DOM.$('subtotal');
+    const taxEl = DOM.$('tax-amount');
+    const totalEl = DOM.$('grand-total');
+
+    if (subtotalEl) subtotalEl.textContent = this.formatCurrency(totals.subtotal);
+    if (taxEl) taxEl.textContent = this.formatCurrency(totals.tax);
+    if (totalEl) totalEl.textContent = this.formatCurrency(totals.total);
+  },
+
+  formatCurrency(amount) {
+    return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  },
+
+  handleSubmit(e) {
+    e.preventDefault();
+    DOM.clearAlerts();
+
+    const isExisting = document.querySelector('input[name="client-type"]:checked')?.value === 'existing';
+    const sendTo = DOM.$('send-to')?.value?.trim();
+
+    // Validation
+    if (isExisting && !this.selectedClient) {
+      DOM.showAlert('error', 'Validation Error', 'Please select a client');
+      return;
+    }
+
+    if (!isExisting) {
+      const companyName = DOM.$('company-name')?.value?.trim();
+      if (!companyName) {
+        DOM.showAlert('error', 'Validation Error', 'Please enter a company name');
+        return;
+      }
+    }
+
+    if (!sendTo) {
+      DOM.showAlert('error', 'Validation Error', 'Please enter an email address');
+      return;
+    }
+
+    const lineItems = this.getLineItems();
+    if (lineItems.length === 0) {
+      DOM.showAlert('error', 'Validation Error', 'Please add at least one line item');
+      return;
+    }
+
+    // Build client data
+    let clientData;
+    if (isExisting) {
+      clientData = {
+        name: this.selectedClient.name,
+        attn: this.selectedClient.billing_contact_name || '',
+        phone: this.selectedClient.billing_phone || '',
+        email: this.selectedClient.billing_email || '',
+        address: [
+          this.selectedClient.billing_address_line1,
+          this.selectedClient.billing_address_line2,
+          [this.selectedClient.billing_city, this.selectedClient.billing_state, this.selectedClient.billing_zip]
+            .filter(Boolean).join(', ')
+        ].filter(Boolean).join('\n')
+      };
+    } else {
+      clientData = {
+        name: DOM.$('company-name')?.value?.trim() || '',
+        attn: DOM.$('attn-name')?.value?.trim() || '',
+        phone: DOM.$('client-phone')?.value?.trim() || '',
+        email: DOM.$('client-email')?.value?.trim() || '',
+        address: DOM.$('client-address')?.value?.trim() || ''
+      };
+    }
+
+    const totals = this.calculateTotals();
+    const invoiceNumber = this.generateInvoiceNumber();
+
+    const payload = {
+      invoiceNumber,
+      client: clientData,
+      sendTo,
+      projectDescription: DOM.$('project-description')?.value?.trim() || '',
+      lineItems,
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      total: totals.total,
+      taxRate: this.taxRate,
+      submitDate: new Date().toISOString().split('T')[0]
+    };
+
+    // Build confirmation modal content
+    let modalContent = '';
+    modalContent += ConfirmModal.grid([
+      { label: 'Invoice #', value: invoiceNumber, highlight: true },
+      { label: 'Send To', value: sendTo }
+    ]);
+    modalContent += ConfirmModal.divider();
+    modalContent += ConfirmModal.section('Client', clientData.name, true);
+    if (clientData.attn) {
+      modalContent += ConfirmModal.section('ATTN', clientData.attn);
+    }
+    modalContent += ConfirmModal.divider();
+
+    // Line items
+    const lineItemsHtml = lineItems.map(item =>
+      `${item.description}: ${this.formatCurrency(item.amount)}`
+    ).join('<br>');
+    modalContent += ConfirmModal.section('Line Items', lineItemsHtml);
+
+    modalContent += ConfirmModal.divider();
+    modalContent += ConfirmModal.grid([
+      { label: 'Subtotal', value: this.formatCurrency(totals.subtotal) },
+      { label: 'Tax (4.712%)', value: this.formatCurrency(totals.tax) }
+    ]);
+    modalContent += ConfirmModal.section('Invoice Total', this.formatCurrency(totals.total), true);
+
+    // Show confirmation modal
+    ConfirmModal.show('Confirm One-Off Invoice', modalContent, () => {
+      this.submitInvoice(payload);
+    });
+  },
+
+  async submitInvoice(payload) {
+    console.log('Submitting one-off invoice:', payload);
+
+    const endpoint = ENDPOINTS['one-off'];
+
+    if (!endpoint) {
+      DOM.showAlert('error', 'Configuration Error',
+        'One-off invoice endpoint not configured. Please set up the Google Apps Script and add the endpoint URL.');
+      return;
+    }
+
+    try {
+      DOM.showLoading('Submitting invoice...');
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.text();
+      console.log('Response:', result);
+
+      // Save new client if checkbox is checked
+      const saveClient = DOM.$('save-client')?.checked;
+      const isNew = document.querySelector('input[name="client-type"]:checked')?.value === 'new';
+
+      if (saveClient && isNew) {
+        await this.saveNewClient(payload.client);
+      }
+
+      DOM.showAlert('success', 'Invoice Submitted!',
+        'The invoice has been generated and emailed. Check your inbox shortly.');
+
+      // Reset form
+      DOM.$('invoice-form')?.reset();
+      this.selectedClient = null;
+      this.updateInvoiceNumber();
+      this.updateTotals();
+
+    } catch (error) {
+      console.error('Failed to submit invoice:', error);
+      DOM.showAlert('error', 'Submission Failed',
+        'There was an error submitting the invoice. Please try again.');
+    } finally {
+      DOM.hideLoading();
+    }
+  },
+
+  async saveNewClient(clientData) {
+    try {
+      const supabaseData = {
+        name: clientData.name,
+        billing_contact_name: clientData.attn || null,
+        billing_phone: clientData.phone || null,
+        billing_email: clientData.email || null,
+        invoice_type: 'one-off'
+      };
+
+      // Parse address if provided
+      if (clientData.address) {
+        const lines = clientData.address.split('\n');
+        if (lines[0]) supabaseData.billing_address_line1 = lines[0];
+        // Could parse city/state/zip but keeping simple for now
+      }
+
+      await SupabaseClient.createClient(supabaseData);
+      console.log('New client saved to Supabase');
+    } catch (error) {
+      console.error('Failed to save new client:', error);
+      // Don't block invoice submission if client save fails
+    }
+  }
+};
+
+/**
  * New Client Form Functions
  */
 const NewClient = {
@@ -1051,6 +1491,8 @@ document.addEventListener('DOMContentLoaded', () => {
     TouchAHeartInvoice.init();
   } else if (path.includes('/recurring/')) {
     RecurringInvoice.init();
+  } else if (path.includes('one-off')) {
+    OneOffInvoice.init();
   } else if (path.includes('/clients/new')) {
     NewClient.init();
   }
