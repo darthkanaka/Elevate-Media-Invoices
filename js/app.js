@@ -6,7 +6,7 @@
 const ENDPOINTS = {
   'invisible-arts': 'https://script.google.com/macros/s/AKfycbyr1FP88_UcGXUEqnXGUlUMYFtfvJ3IA2jdIHZN1fau00vB-dUyMRD4dWTo-HnezVMc/exec',
   'touch-a-heart': 'https://script.google.com/macros/s/AKfycbxSsPa7iyNz1re27zsrXjOGOzieh1XaSBkozWH0igYfxIr-1Vg1QruqPnQqnNJpXPCw/exec',
-  'one-off': '' // TODO: Add one-off invoice Apps Script endpoint
+  'one-off': 'https://script.google.com/macros/s/AKfycbxWuXY4WkerKrLW4LGwKeeOa6V8562nWVnc9k9kML6WDf2RB_yg1ifLBjogFj8BlC5TRw/exec'
 };
 
 // Client slug mapping (client name -> form page)
