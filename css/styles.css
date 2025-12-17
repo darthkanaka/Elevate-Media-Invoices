@@ -70,21 +70,14 @@ body {
 
 /* Logo - Matching Elevate Media branding */
 .logo {
-  font-size: 1.25rem;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  color: var(--header-text);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
-.logo span {
-  display: block;
-  font-size: 0.5rem;
-  font-weight: 400;
-  letter-spacing: 0.25em;
-  opacity: 0.8;
-  margin-top: -2px;
+.logo img {
+  height: 28px;
+  width: auto;
 }
 
 .back-link {
@@ -821,14 +814,8 @@ body {
     padding: 1rem 1.5rem;
   }
 
-  .logo {
-    font-size: 1.5rem;
-  }
-
-  .logo span {
-    font-size: 0.6rem;
-    letter-spacing: 0.3em;
-    margin-top: -4px;
+  .logo img {
+    height: 36px;
   }
 
   .back-link {
