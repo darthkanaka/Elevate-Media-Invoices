@@ -299,8 +299,7 @@ const Dashboard = {
  */
 const RecurringInvoice = {
   expenseCount: 1,
-  // Base date: Dec 12, 2024 (Friday) - the anchor for period calculations
-  baseDate: new Date(2024, 11, 12), // Month is 0-indexed, so 11 = December
+  weeks: [], // Generated weeks based on date range
   // Rates (will be fetched from Google Sheets, these are fallbacks)
   hourlyRate: 45,
   taxRate: 0.04712,
@@ -365,7 +364,6 @@ const RecurringInvoice = {
 
       this.populateForm();
       this.setupEventListeners();
-      this.updatePayPeriodDisplay();
     } catch (error) {
       console.error('Failed to load client:', error);
       DOM.showAlert('error', 'Error Loading Client', error.message);
@@ -390,11 +388,21 @@ const RecurringInvoice = {
       sendToInput.value = client.send_to_email || client.billing_email || '';
     }
 
-    // Set default hours
-    const week1Input = DOM.$('week1-hours');
-    const week2Input = DOM.$('week2-hours');
-    if (week1Input) week1Input.value = '40';
-    if (week2Input) week2Input.value = '40';
+    // Set default dates (last two weeks ending today)
+    const today = new Date();
+    const twoWeeksAgo = new Date(today);
+    twoWeeksAgo.setDate(today.getDate() - 13); // 14 days including today
+
+    const startDateInput = DOM.$('start-date');
+    const endDateInput = DOM.$('end-date');
+    if (startDateInput) startDateInput.value = this.formatDateISO(twoWeeksAgo);
+    if (endDateInput) endDateInput.value = this.formatDateISO(today);
+
+    // Update hourly rate display
+    const rateDisplay = DOM.$('hourly-rate-display');
+    if (rateDisplay) {
+      rateDisplay.textContent = `${this.formatCurrency(this.hourlyRate)}/hr`;
+    }
   },
 
   setupEventListeners() {
@@ -410,51 +418,34 @@ const RecurringInvoice = {
       addExpenseBtn.addEventListener('click', () => this.addExpenseRow());
     }
 
-    // Periods forward change
-    const periodsInput = DOM.$('periods-forward');
-    if (periodsInput) {
-      periodsInput.addEventListener('change', () => this.updatePayPeriodDisplay());
-      periodsInput.addEventListener('input', () => this.updatePayPeriodDisplay());
+    // Date range change
+    const startDateInput = DOM.$('start-date');
+    const endDateInput = DOM.$('end-date');
+    if (startDateInput) {
+      startDateInput.addEventListener('change', () => this.generateWeeks());
     }
+    if (endDateInput) {
+      endDateInput.addEventListener('change', () => this.generateWeeks());
+    }
+
+    // Initial week generation
+    this.generateWeeks();
   },
 
   /**
-   * Calculate pay period dates based on periods forward
+   * Format date as ISO string (YYYY-MM-DD)
    */
-  calculatePayPeriod(periodsForward) {
-    // Each period is 14 days (2 weeks)
-    // Period end is the Friday of submission
-    const periodEndDate = new Date(this.baseDate);
-    periodEndDate.setDate(periodEndDate.getDate() + (periodsForward * 14));
-
-    // Period starts 13 days before end (14-day period inclusive)
-    const periodStartDate = new Date(periodEndDate);
-    periodStartDate.setDate(periodStartDate.getDate() - 13);
-
-    // Week 1: first 7 days (Sat-Fri)
-    const week1Start = new Date(periodStartDate);
-    const week1End = new Date(periodStartDate);
-    week1End.setDate(week1End.getDate() + 6);
-
-    // Week 2: last 7 days (Sat-Fri)
-    const week2Start = new Date(week1End);
-    week2Start.setDate(week2Start.getDate() + 1);
-    const week2End = new Date(periodEndDate);
-
-    return {
-      periodStart: periodStartDate,
-      periodEnd: periodEndDate,
-      week1Start,
-      week1End,
-      week2Start,
-      week2End
-    };
+  formatDateISO(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   },
 
   /**
-   * Format date as "Mon DD, YYYY" or "Mon DD" (short)
+   * Format date as "Mon DD" or "Mon DD, YYYY"
    */
-  formatDate(date, includeYear = true) {
+  formatDate(date, includeYear = false) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const month = months[date.getMonth()];
@@ -464,13 +455,191 @@ const RecurringInvoice = {
   },
 
   /**
-   * Generate invoice number based on period end date
+   * Format date range for display (e.g., "Jan 27 - 31, 2025" or "Jan 27 - Feb 2, 2025")
+   */
+  formatDateRange(startDate, endDate) {
+    const startMonth = startDate.toLocaleString('en-US', { month: 'short' });
+    const endMonth = endDate.toLocaleString('en-US', { month: 'short' });
+    const startDay = startDate.getDate();
+    const endDay = endDate.getDate();
+    const year = endDate.getFullYear();
+
+    if (startMonth === endMonth) {
+      return `${startMonth} ${startDay} - ${endDay}, ${year}`;
+    } else {
+      return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+    }
+  },
+
+  /**
+   * Count weekdays (Mon-Fri) between two dates inclusive
+   */
+  countWeekdays(startDate, endDate) {
+    let count = 0;
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      const dayOfWeek = current.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not Sunday (0) or Saturday (6)
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return count;
+  },
+
+  /**
+   * Generate weeks from start/end date range
+   * Each week is Mon-Fri, partial weeks show actual dates
+   */
+  generateWeeks() {
+    const startDateInput = DOM.$('start-date');
+    const endDateInput = DOM.$('end-date');
+    const container = DOM.$('weeks-container');
+    const emptyState = DOM.$('weeks-empty-state');
+    const hoursSummary = DOM.$('hours-summary');
+
+    if (!startDateInput || !endDateInput || !container) return;
+
+    const startDate = startDateInput.value ? new Date(startDateInput.value + 'T00:00:00') : null;
+    const endDate = endDateInput.value ? new Date(endDateInput.value + 'T00:00:00') : null;
+
+    // Clear previous weeks
+    this.weeks = [];
+    container.querySelectorAll('.week-item').forEach(el => el.remove());
+
+    // Validate dates
+    if (!startDate || !endDate || startDate > endDate) {
+      if (emptyState) emptyState.classList.remove('hidden');
+      if (hoursSummary) hoursSummary.classList.add('hidden');
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+    if (hoursSummary) hoursSummary.classList.remove('hidden');
+
+    // Generate weeks
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      // Find the Monday of the current week (or start date if after Monday)
+      let weekStart = new Date(currentDate);
+      const dayOfWeek = weekStart.getDay();
+
+      // If we're on a weekend, move to Monday
+      if (dayOfWeek === 0) { // Sunday
+        weekStart.setDate(weekStart.getDate() + 1);
+      } else if (dayOfWeek === 6) { // Saturday
+        weekStart.setDate(weekStart.getDate() + 2);
+      }
+
+      // Skip if week start is past end date
+      if (weekStart > endDate) break;
+
+      // Find Friday of this week
+      let weekEnd = new Date(weekStart);
+      const startDayOfWeek = weekStart.getDay();
+      const daysUntilFriday = 5 - startDayOfWeek; // Friday is day 5
+      weekEnd.setDate(weekStart.getDate() + daysUntilFriday);
+
+      // Cap at end date
+      if (weekEnd > endDate) {
+        weekEnd = new Date(endDate);
+        // If end date is a weekend, move back to Friday
+        if (weekEnd.getDay() === 0) {
+          weekEnd.setDate(weekEnd.getDate() - 2);
+        } else if (weekEnd.getDay() === 6) {
+          weekEnd.setDate(weekEnd.getDate() - 1);
+        }
+      }
+
+      // Only add if week start is valid (not past week end)
+      if (weekStart <= weekEnd) {
+        const weekdays = this.countWeekdays(weekStart, weekEnd);
+        const defaultHours = weekdays * 8;
+
+        const week = {
+          start: new Date(weekStart),
+          end: new Date(weekEnd),
+          weekdays: weekdays,
+          hours: defaultHours
+        };
+
+        this.weeks.push(week);
+        this.renderWeekItem(week, this.weeks.length - 1, container);
+      }
+
+      // Move to next Monday
+      currentDate = new Date(weekEnd);
+      currentDate.setDate(currentDate.getDate() + 1);
+      // Skip to Monday
+      while (currentDate.getDay() !== 1 && currentDate <= endDate) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+
+    this.updateTotals();
+  },
+
+  /**
+   * Render a single week item
+   */
+  renderWeekItem(week, index, container) {
+    const div = document.createElement('div');
+    div.className = 'week-item';
+    div.dataset.index = index;
+
+    const dateRange = this.formatDateRange(week.start, week.end);
+    const daysLabel = week.weekdays === 1 ? '1 day' : `${week.weekdays} days`;
+
+    div.innerHTML = `
+      <div class="week-info">
+        <span class="week-dates">${dateRange}</span>
+        <span class="week-days">${daysLabel} (${week.weekdays * 8}hrs default)</span>
+      </div>
+      <input
+        type="number"
+        class="form-input week-hours-input"
+        value="${week.hours}"
+        min="0"
+        max="168"
+        step="0.5"
+        data-index="${index}"
+      >
+    `;
+
+    // Add event listener for hours change
+    const input = div.querySelector('.week-hours-input');
+    input.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.dataset.index);
+      this.weeks[idx].hours = parseFloat(e.target.value) || 0;
+      this.updateTotals();
+    });
+
+    container.appendChild(div);
+  },
+
+  /**
+   * Update hours summary totals
+   */
+  updateTotals() {
+    const totalHours = this.weeks.reduce((sum, week) => sum + week.hours, 0);
+    const hoursSubtotal = totalHours * this.hourlyRate;
+
+    const totalHoursEl = DOM.$('total-hours');
+    const hoursSubtotalEl = DOM.$('hours-subtotal');
+
+    if (totalHoursEl) totalHoursEl.textContent = totalHours;
+    if (hoursSubtotalEl) hoursSubtotalEl.textContent = this.formatCurrency(hoursSubtotal);
+  },
+
+  /**
+   * Generate invoice number based on end date
    * Format: IA + YYYYMMDD + -1 (e.g., IA20251226-1)
    */
-  generateInvoiceNumber(periodEnd) {
-    const year = periodEnd.getFullYear();
-    const month = String(periodEnd.getMonth() + 1).padStart(2, '0');
-    const day = String(periodEnd.getDate()).padStart(2, '0');
+  generateInvoiceNumber(endDate) {
+    const year = endDate.getFullYear();
+    const month = String(endDate.getMonth() + 1).padStart(2, '0');
+    const day = String(endDate.getDate()).padStart(2, '0');
     return `IA${year}${month}${day}-1`;
   },
 
@@ -493,33 +662,6 @@ const RecurringInvoice = {
    */
   formatCurrency(amount) {
     return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  },
-
-  /**
-   * Update the pay period display
-   */
-  updatePayPeriodDisplay() {
-    const periodsInput = DOM.$('periods-forward');
-    if (!periodsInput) return;
-
-    const periodsForward = parseInt(periodsInput.value) || 1;
-    const period = this.calculatePayPeriod(periodsForward);
-
-    // Update main period dates
-    const periodStartEl = DOM.$('period-start');
-    const periodEndEl = DOM.$('period-end');
-    if (periodStartEl) periodStartEl.textContent = this.formatDate(period.periodStart);
-    if (periodEndEl) periodEndEl.textContent = this.formatDate(period.periodEnd);
-
-    // Update week dates
-    const week1DatesEl = DOM.$('week1-dates');
-    const week2DatesEl = DOM.$('week2-dates');
-    if (week1DatesEl) {
-      week1DatesEl.textContent = `${this.formatDate(period.week1Start, false)} - ${this.formatDate(period.week1End, false)}`;
-    }
-    if (week2DatesEl) {
-      week2DatesEl.textContent = `${this.formatDate(period.week2Start, false)} - ${this.formatDate(period.week2End, false)}`;
-    }
   },
 
   addExpenseRow() {
@@ -574,10 +716,9 @@ const RecurringInvoice = {
     DOM.clearAlerts();
 
     const sendTo = DOM.$('send-to')?.value?.trim();
-    const week1Hours = parseFloat(DOM.$('week1-hours')?.value) || 0;
-    const week2Hours = parseFloat(DOM.$('week2-hours')?.value) || 0;
+    const startDate = DOM.$('start-date')?.value;
+    const endDate = DOM.$('end-date')?.value;
     const projectDescription = DOM.$('project-description')?.value?.trim() || '';
-    const periodsForward = parseInt(DOM.$('periods-forward')?.value) || 1;
 
     // Validation
     if (!sendTo) {
@@ -585,30 +726,45 @@ const RecurringInvoice = {
       return;
     }
 
-    // Calculate pay period dates
-    const period = this.calculatePayPeriod(periodsForward);
+    if (!startDate || !endDate) {
+      DOM.showAlert('error', 'Validation Error', 'Please select start and end dates');
+      return;
+    }
+
+    if (this.weeks.length === 0) {
+      DOM.showAlert('error', 'Validation Error', 'No valid weeks in the selected date range');
+      return;
+    }
+
+    // Build weeks data for payload
+    const weeksData = this.weeks.map(week => ({
+      startDate: this.formatDateISO(week.start),
+      endDate: this.formatDateISO(week.end),
+      dateRange: this.formatDateRange(week.start, week.end),
+      weekdays: week.weekdays,
+      hours: week.hours
+    }));
+
+    const endDateObj = new Date(endDate + 'T00:00:00');
+    const startDateObj = new Date(startDate + 'T00:00:00');
 
     const payload = {
-      week1Hours,
-      week2Hours,
+      weeks: weeksData,
       projectDescription,
       sendTo,
       expenses: this.getExpenses(),
-      periodsForward,
-      periodStart: period.periodStart.toISOString().split('T')[0],
-      periodEnd: period.periodEnd.toISOString().split('T')[0],
-      week1Start: period.week1Start.toISOString().split('T')[0],
-      week1End: period.week1End.toISOString().split('T')[0],
-      week2Start: period.week2Start.toISOString().split('T')[0],
-      week2End: period.week2End.toISOString().split('T')[0]
+      startDate,
+      endDate,
+      hourlyRate: this.hourlyRate,
+      taxRate: this.taxRate
     };
 
     // Build confirmation modal content
-    const totalHours = week1Hours + week2Hours;
+    const totalHours = this.weeks.reduce((sum, week) => sum + week.hours, 0);
     const expenses = this.getExpenses().filter(exp => exp.description && exp.amount > 0);
     const expensesTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const totals = this.calculateTotals(totalHours, expensesTotal);
-    const invoiceNumber = this.generateInvoiceNumber(period.periodEnd);
+    const invoiceNumber = this.generateInvoiceNumber(endDateObj);
 
     let modalContent = '';
     modalContent += ConfirmModal.grid([
@@ -616,17 +772,16 @@ const RecurringInvoice = {
       { label: 'Send To', value: sendTo }
     ]);
     modalContent += ConfirmModal.divider();
-    modalContent += ConfirmModal.section('Pay Period',
-      `${this.formatDate(period.periodStart)} - ${this.formatDate(period.periodEnd)}`, true);
-    modalContent += ConfirmModal.grid([
-      { label: 'Week 1', value: `${this.formatDate(period.week1Start, false)} - ${this.formatDate(period.week1End, false)}` },
-      { label: 'Week 2', value: `${this.formatDate(period.week2Start, false)} - ${this.formatDate(period.week2End, false)}` }
-    ]);
+    modalContent += ConfirmModal.section('Period',
+      `${this.formatDate(startDateObj, true)} - ${this.formatDate(endDateObj, true)}`, true);
+
+    // Show weeks
     modalContent += ConfirmModal.divider();
-    modalContent += ConfirmModal.grid([
-      { label: 'Week 1 Hours', value: week1Hours },
-      { label: 'Week 2 Hours', value: week2Hours }
-    ]);
+    const weeksHtml = this.weeks.map(week =>
+      `${this.formatDateRange(week.start, week.end)}: ${week.hours} hrs`
+    ).join('<br>');
+    modalContent += ConfirmModal.section('Weekly Hours', weeksHtml);
+
     modalContent += ConfirmModal.grid([
       { label: 'Total Hours', value: totalHours, highlight: true },
       { label: 'Rate', value: `${this.formatCurrency(this.hourlyRate)}/hr` }
@@ -684,10 +839,8 @@ const RecurringInvoice = {
 
       // Reset form
       DOM.$('invoice-form')?.reset();
-      DOM.$('week1-hours').value = '40';
-      DOM.$('week2-hours').value = '40';
-      DOM.$('periods-forward').value = '1';
-      this.updatePayPeriodDisplay();
+      this.weeks = [];
+      this.generateWeeks();
 
     } catch (error) {
       console.error('Failed to submit invoice:', error);

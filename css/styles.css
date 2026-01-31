@@ -995,9 +995,96 @@ body {
   }
 }
 
+/* Weeks List (for date-range based invoicing) */
+.weeks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.weeks-list .empty-state {
+  padding: 2rem;
+  font-size: 0.875rem;
+}
+
+.week-item {
+  display: grid;
+  grid-template-columns: 1fr 100px;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--surface-alt);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.week-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.week-dates {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.week-days {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.week-hours-input {
+  width: 100px;
+  text-align: center;
+  font-weight: 500;
+}
+
+@media (min-width: 640px) {
+  .week-item {
+    grid-template-columns: 1fr 120px;
+    padding: 1rem;
+  }
+
+  .week-dates {
+    font-size: 1rem;
+  }
+
+  .week-days {
+    font-size: 0.8rem;
+  }
+
+  .week-hours-input {
+    width: 120px;
+  }
+}
+
 /* Totals Card */
 .totals-card {
   background: var(--surface-alt);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.totals-row-highlight {
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.totals-row-highlight .totals-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.totals-row-highlight .totals-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-color);
 }
 
 .totals-grid {
