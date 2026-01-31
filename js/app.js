@@ -418,20 +418,30 @@ const RecurringInvoice = {
       addExpenseBtn.addEventListener('click', () => this.addExpenseRow());
     }
 
+    // Bind generateWeeks to this context
+    const self = this;
+
     // Generate weeks button
     const generateWeeksBtn = DOM.$('generate-weeks-btn');
     if (generateWeeksBtn) {
-      generateWeeksBtn.addEventListener('click', () => this.generateWeeks());
+      generateWeeksBtn.addEventListener('click', function() {
+        console.log('Generate button clicked');
+        self.generateWeeks();
+      });
     }
 
     // Also generate on date change for convenience
     const startDateInput = DOM.$('start-date');
     const endDateInput = DOM.$('end-date');
     if (startDateInput) {
-      startDateInput.addEventListener('change', () => this.generateWeeks());
+      startDateInput.addEventListener('change', function() {
+        self.generateWeeks();
+      });
     }
     if (endDateInput) {
-      endDateInput.addEventListener('change', () => this.generateWeeks());
+      endDateInput.addEventListener('change', function() {
+        self.generateWeeks();
+      });
     }
 
     // Initial week generation
