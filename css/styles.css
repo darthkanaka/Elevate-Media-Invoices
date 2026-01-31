@@ -995,40 +995,24 @@ body {
   }
 }
 
-/* Date Range Row */
-.date-range-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+/* Link-style Button */
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  display: inline-flex;
   align-items: center;
+  gap: 0.25rem;
 }
 
-.date-range-row .form-input {
-  flex: 1;
-  min-width: 130px;
-}
-
-.date-range-separator {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  padding: 0 0.25rem;
-}
-
-.date-range-row .btn {
-  width: auto;
-  padding: 0.75rem 1rem;
-  white-space: nowrap;
-}
-
-@media (min-width: 640px) {
-  .date-range-row {
-    flex-wrap: nowrap;
-  }
-
-  .date-range-row .form-input {
-    flex: none;
-    width: 160px;
-  }
+.btn-link:hover {
+  text-decoration: underline;
 }
 
 /* Weeks List (for date-range based invoicing) */
