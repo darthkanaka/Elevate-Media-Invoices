@@ -418,7 +418,13 @@ const RecurringInvoice = {
       addExpenseBtn.addEventListener('click', () => this.addExpenseRow());
     }
 
-    // Date range change
+    // Generate weeks button
+    const generateWeeksBtn = DOM.$('generate-weeks-btn');
+    if (generateWeeksBtn) {
+      generateWeeksBtn.addEventListener('click', () => this.generateWeeks());
+    }
+
+    // Also generate on date change for convenience
     const startDateInput = DOM.$('start-date');
     const endDateInput = DOM.$('end-date');
     if (startDateInput) {
