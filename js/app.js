@@ -1575,7 +1575,7 @@ const OneOffInvoice = {
       }
 
       await SupabaseClient.createClient(supabaseData);
-      console.log('New client saved to Supabase');
+      console.log('New client saved to this browser');
     } catch (error) {
       console.error('Failed to save new client:', error);
       // Don't block invoice submission if client save fails
