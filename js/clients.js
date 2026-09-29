@@ -62,22 +62,22 @@ const CLIENTS = [
   {
     "id": "6a3a303d-61c9-4d11-9042-29c7fb651e45",
     "name": "Honolulu Civil Beat",
-    "billing_contact_name": null,
-    "send_to_email": null,
+    "billing_contact_name": "Ashley Ong",
+    "send_to_email": "aong@civilbeat.org",
     "billing_phone": "(808) 737-2300",
     "default_rate": 200.0,
     "invoice_type": "one-off",
     "payment_terms": "Due upon receipt",
-    "notes": "Per video editing for the Know Your Candidate series. Checks written to Veex Photo LLC. GET passed on at 4.712 percent. No published accounts payable contact: billing_contact_name and send_to_email are blank on purpose, fill them from Kawika's own contact there. Added 2026-09-28.",
+    "notes": "Per video editing for the Know Your Candidate series. Checks written to Veex Photo LLC. GET passed on at 4.712 percent. Send to Ashley Ong, Director of Events, who Kawika was told to bill through. Civil Beat publishes no accounts payable address, so this is a named person rather than a department inbox; if she moves on, ask before guessing a replacement. Added 2026-09-28.",
     "created_at": "2026-09-28T00:00:00.000000Z",
     "updated_at": "2026-09-28T00:00:00.000000Z",
-    "billing_email": null,
+    "billing_email": "aong@civilbeat.org",
     "billing_address_line1": "P.O. Box 10857",
     "billing_address_line2": null,
     "billing_city": "Honolulu",
     "billing_state": "HI",
     "billing_zip": "96816",
-    "send_to_name": null
+    "send_to_name": "Ashley Ong"
   }
 ];
 
